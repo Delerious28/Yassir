@@ -40,7 +40,13 @@ export default function ScheduleEditor() {
       <Card title="Preview (next 10)">
         <ul className="space-y-1">
           {sampleTimes.map((t, i) => (
-            <li key={i} className="text-sm text-gray-800">{t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</li>
+            <li
+              key={i}
+              className="text-sm"
+              style={{ color: 'rgba(var(--fg),0.9)' }}
+            >
+              {t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </li>
           ))}
         </ul>
       </Card>

@@ -11,6 +11,14 @@ html, body, #root {
 
 :root {
   --transition: 0.25s ease;
+
+  /* Default palette (used as fallback when no theme is set) */
+  --bg: 246 248 252;
+  --fg: 21 30 45;
+  --card-bg: 255 255 255;
+  --border: 223 228 235;
+  --accent: 54 109 245;
+  --accent2: 104 201 255;
 }
 
 * {
@@ -24,41 +32,41 @@ html, body, #root {
    LIGHT THEME — Clean / subtle
 ================================================ */
 .theme-light {
-  --bg: 245 246 250;
-  --fg: 28 32 46;
+  --bg: 246 248 252;
+  --fg: 21 30 45;
   --card-bg: 255 255 255;
-  --border: 220 223 230;
-  --accent: 79 70 229;
+  --border: 223 228 235;
+  --accent: 54 109 245;   /* breezy blue */
 }
 
 /* ================================================
    DARK THEME — Matte futuristic
 ================================================ */
 .theme-dark {
-  --bg: 13 17 23;        /* #0D1117 */
-  --fg: 230 237 243;     /* #E6EDF3 */
-  --card-bg: 22 27 34;   /* #161B22 */
-  --border: 48 54 61;    /* #30363D */
-  --accent: 139 156 255; /* soft indigo */
+  --bg: 15 18 29;
+  --fg: 232 236 243;
+  --card-bg: 24 29 41;
+  --border: 60 67 83;
+  --accent: 99 179 237;   /* soft teal-blue */
 }
 
 /* ================================================
-   CYBER THEME — NEON CYAN/PINK
-   (Professional + Glassmorphism)
+   AURORA THEME — Liquid glass inspired by macOS
+   (soft blue mist, frosted light layers)
 ================================================ */
 .theme-cyber {
-  --bg: 5 6 10;           /* deep near-black */
-  --fg: 220 230 255;      /* icy white-blue */
-  --card-bg: 12 14 20;    /* glass base */
+  --bg: 12 16 28;           /* deep navy base */
+  --fg: 236 243 255;        /* cloud white */
+  --card-bg: 18 22 34;      /* smoked glass */
 
-  --border: 0 246 255;    /* cyan border glow */
+  --border: 140 175 220;    /* cool edge highlight */
 
-  --accent: 0 246 255;    /* CYAN accent */
-  --accent2: 255 46 129;  /* PINK accent */
+  --accent: 128 190 255;    /* macOS blue */
+  --accent2: 185 225 255;   /* polar glow */
 
-  --glass: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(0, 246, 255, 0.25);
-  --glass-glow: rgba(0, 246, 255, 0.6);
+  --glass: rgba(255, 255, 255, 0.14);
+  --glass-border: rgba(255, 255, 255, 0.28);
+  --glass-glow: rgba(128, 190, 255, 0.35);
 }
 
 /* ================================================
@@ -68,6 +76,29 @@ html, body, #root {
 html[class^="theme-"] body {
   background: rgb(var(--bg));
   color: rgb(var(--fg));
+}
+
+body {
+  background: radial-gradient(circle at 20% 20%, rgba(var(--accent), 0.08), transparent 25%),
+              radial-gradient(circle at 80% 0%, rgba(var(--accent2), 0.06), transparent 20%),
+              rgb(var(--bg));
+}
+
+.page-shell {
+  position: relative;
+}
+
+.page-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(var(--accent), 0.05), rgba(var(--accent2), 0.05));
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.page-shell > * {
+  position: relative;
 }
 
 /* ================================================
@@ -92,10 +123,10 @@ html.theme-cyber .card,
 html.theme-cyber .border,
 html.theme-cyber .border-r,
 html.theme-cyber .border-b {
-  background: var(--glass) !important;
-  backdrop-filter: blur(12px);
+  background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08)) !important;
+  backdrop-filter: blur(18px) saturate(130%);
   border-color: var(--glass-border) !important;
-  box-shadow: 0 0 12px var(--glass-glow);
+  box-shadow: 0 12px 40px rgba(3,11,28,0.45), inset 0 1px 0 rgba(255,255,255,0.18), 0 0 16px var(--glass-glow);
 }
 
 /* ================================================
@@ -105,26 +136,27 @@ html.theme-cyber .border-b {
 html.theme-cyber input,
 html.theme-cyber textarea,
 html.theme-cyber select {
-  background-color: rgba(255,255,255,0.03) !important;
+  background-color: rgba(255,255,255,0.14) !important;
   border-color: var(--glass-border) !important;
   color: rgb(var(--fg)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
 }
 
 html.theme-cyber input::placeholder {
-  color: rgba(0,246,255,0.5) !important;
+  color: rgba(200,225,255,0.65) !important;
 }
 
 html.theme-cyber button {
   border-color: var(--glass-border) !important;
-  background: rgba(0,246,255,0.12) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(185,225,255,0.18)) !important;
   color: rgb(var(--fg)) !important;
-  box-shadow: 0 0 15px rgba(0,246,255,0.5);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.25), 0 0 20px rgba(128,190,255,0.35);
 }
 
 html.theme-cyber button:hover {
-  background: rgba(255,46,129,0.15) !important;
-  border-color: rgba(255,46,129,0.4) !important;
-  box-shadow: 0 0 20px rgba(255,46,129,0.6);
+  background: linear-gradient(135deg, rgba(185,225,255,0.2), rgba(255,255,255,0.26)) !important;
+  border-color: rgba(255,255,255,0.4) !important;
+  box-shadow: 0 0 26px rgba(128,190,255,0.5);
 }
 
 /* ================================================
@@ -136,12 +168,12 @@ html.theme-cyber h2,
 html.theme-cyber h3,
 html.theme-cyber .font-semibold,
 html.theme-cyber .font-medium {
-  text-shadow: 0 0 10px rgba(0,246,255,0.8);
+  text-shadow: 0 6px 26px rgba(0,34,78,0.55);
 }
 
 html.theme-cyber a {
-  color: rgb(var(--accent2));
-  text-shadow: 0 0 8px rgba(255,46,129,0.8);
+  color: rgb(var(--accent));
+  text-shadow: 0 6px 18px rgba(0,34,78,0.5);
 }
 
 html.theme-cyber .text-muted {
@@ -155,16 +187,16 @@ html.theme-cyber .text-muted {
 
 @keyframes cyber-glow {
   0% {
-    box-shadow: 0 0 6px rgba(0, 246, 255, 0.4), 0 0 12px rgba(0, 246, 255, 0.2);
-    border-color: rgba(0, 246, 255, 0.25);
+    box-shadow: 0 0 6px rgba(102, 255, 204, 0.35), 0 0 12px rgba(102, 255, 204, 0.2);
+    border-color: rgba(102, 255, 204, 0.25);
   }
   50% {
-    box-shadow: 0 0 14px rgba(255, 46, 129, 0.7), 0 0 28px rgba(255, 46, 129, 0.4);
-    border-color: rgba(255, 46, 129, 0.4);
+    box-shadow: 0 0 14px rgba(255, 140, 199, 0.55), 0 0 28px rgba(255, 140, 199, 0.32);
+    border-color: rgba(255, 140, 199, 0.35);
   }
   100% {
-    box-shadow: 0 0 6px rgba(0, 246, 255, 0.4), 0 0 12px rgba(0, 246, 255, 0.2);
-    border-color: rgba(0, 246, 255, 0.25);
+    box-shadow: 0 0 6px rgba(102, 255, 204, 0.35), 0 0 12px rgba(102, 255, 204, 0.2);
+    border-color: rgba(102, 255, 204, 0.25);
   }
 }
 
@@ -175,7 +207,7 @@ html.theme-cyber .text-muted {
 html.theme-cyber .card,
 html.theme-cyber .border,
 html.theme-cyber .rounded-lg {
-  animation: cyber-glow 4s ease-in-out infinite;
+  animation: cyber-glow 6s ease-in-out infinite;
 }
 
 /* ================================================
@@ -183,13 +215,7 @@ html.theme-cyber .rounded-lg {
 ================================================ */
 
 html.theme-cyber button {
-  animation: cyber-glow 3.5s ease-in-out infinite;
-}
-
-/* Stronger glow when hovered */
-html.theme-cyber button:hover {
-  animation-duration: 2s;
-  background: rgba(255, 46, 129, 0.22) !important;
+  animation: cyber-glow 5s ease-in-out infinite;
 }
 
 /* ================================================
