@@ -10,6 +10,26 @@ from pathlib import Path
 from datetime import datetime
 
 app = FastAPI(title="Outreach Backend", version="0.1.0")
+# Simple .env loader
+ENV_PATH = Path(__file__).parent.parent / ".env"
+ENV_VARS: dict[str, str] = {}
+if ENV_PATH.exists():
+    try:
+        for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                k, v = line.split("=", 1)
+                k = k.strip()
+                v = v.strip().strip('"').strip("'")
+                ENV_VARS[k] = v
+    except Exception as e:
+        print(f"Warning: Failed to read .env: {e}")
+
+ENV_CLIENT_ID = ENV_VARS.get("AZURE_CLIENT_ID", "4bb85405-0fc5-4dcc-b758-f2bb54057a57")
+ENV_TENANT_ID = ENV_VARS.get("AZURE_TENANT_ID", "consumers")
+ENV_MAIL_FROM = ENV_VARS.get("MAIL_FROM", "beaumeteens@gmail.com")
 
 # Allow local dev frontend to call the backend
 app.add_middleware(
@@ -32,13 +52,9 @@ if DIST_PATH.exists():
         # Cache static assets for 1 year
         if request.url.path.startswith("/assets/"):
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-        # Don't cache HTML files
-        elif request.url.path.endswith(".html") or request.url.path == "/":
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         return response
-    
+    # Serve assets only to avoid overriding API routes in dev
     app.mount("/assets", StaticFiles(directory=str(DIST_PATH / "assets")), name="assets")
-    app.mount("/", StaticFiles(directory=str(DIST_PATH), html=True), name="static")
 
 class SendMailBody(BaseModel):
     to: EmailStr
@@ -76,8 +92,43 @@ def save_token_cache(cache: dict):
 # Load existing tokens on startup
 _token_cache = load_token_cache()
 
-def get_access_token(client_id: str, tenant_id: str) -> str:
+def write_env(new_values: dict[str, str]):
+    """Persist provided keys to .env and refresh in-memory defaults."""
+    # Update ENV_VARS with provided values
+    for k, v in new_values.items():
+        if v is None:
+            continue
+        ENV_VARS[k] = v
+    # Write back to .env preserving simple KEY=value format
+    try:
+        lines = []
+        # Ensure keys exist
+        for key in ["AZURE_CLIENT_ID", "AZURE_TENANT_ID", "MAIL_FROM", "AZURE_CLIENT_SECRET"]:
+            val = ENV_VARS.get(key, "")
+            lines.append(f"{key}={val}\n")
+        ENV_PATH.write_text("".join(lines), encoding="utf-8")
+    except Exception as e:
+        print(f"Warning: Failed to write .env: {e}")
+    # Refresh module-level defaults
+    global ENV_CLIENT_ID, ENV_TENANT_ID, ENV_MAIL_FROM
+    ENV_CLIENT_ID = ENV_VARS.get("AZURE_CLIENT_ID", ENV_CLIENT_ID)
+    ENV_TENANT_ID = ENV_VARS.get("AZURE_TENANT_ID", ENV_TENANT_ID)
+    ENV_MAIL_FROM = ENV_VARS.get("MAIL_FROM", ENV_MAIL_FROM)
+
+class ConfigResponse(BaseModel):
+    azure_client_id: str | None = None
+    azure_tenant_id: str | None = None
+    mail_from: EmailStr | None = None
+
+class ConfigUpdate(BaseModel):
+    azure_client_id: str | None = None
+    azure_tenant_id: str | None = None
+    mail_from: EmailStr | None = None
+
+def get_access_token(client_id: str | None, tenant_id: str | None) -> str:
     """Get cached access token with automatic refresh. Raises 401 if not authenticated."""
+    client_id = client_id or ENV_CLIENT_ID
+    tenant_id = tenant_id or ENV_TENANT_ID
     cache_key = f"{client_id}:{tenant_id}"
     
     if cache_key not in _token_cache or cache_key.endswith(":flow"):
@@ -92,34 +143,8 @@ def get_access_token(client_id: str, tenant_id: str) -> str:
     if isinstance(token_data, str):
         return token_data
     
-    # Try to use cached access token first
+    # Use cached access token if present (no refresh for public client)
     if "access_token" in token_data:
-        # Check if we have a refresh token and should refresh
-        if "refresh_token" in token_data:
-            # Try to refresh the token proactively
-            try:
-                authority = f"https://login.microsoftonline.com/{tenant_id}"
-                scopes = ["https://graph.microsoft.com/Mail.Send"]
-                
-                app_msal = msal.PublicClientApplication(
-                    client_id=client_id,
-                    authority=authority,
-                )
-                
-                result = app_msal.acquire_token_by_refresh_token(
-                    token_data["refresh_token"],
-                    scopes=scopes
-                )
-                
-                if "access_token" in result:
-                    # Update cache with new tokens
-                    _token_cache[cache_key] = result
-                    save_token_cache(_token_cache)
-                    return result["access_token"]
-            except Exception as e:
-                print(f"Token refresh failed: {e}")
-                # Fall through to return existing token
-        
         return token_data["access_token"]
     
     raise HTTPException(
@@ -128,8 +153,8 @@ def get_access_token(client_id: str, tenant_id: str) -> str:
     )
 
 class AuthInitRequest(BaseModel):
-    azure_client_id: str
-    azure_tenant_id: str
+    azure_client_id: str | None = None
+    azure_tenant_id: str | None = None
 
 class AuthInitResponse(BaseModel):
     user_code: str
@@ -140,6 +165,35 @@ class AuthInitResponse(BaseModel):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.get("/config", response_model=ConfigResponse)
+async def get_config():
+    """Return current server-side configuration values."""
+    return ConfigResponse(
+        azure_client_id=ENV_CLIENT_ID or None,
+        azure_tenant_id=ENV_TENANT_ID or None,
+        mail_from=ENV_MAIL_FROM or None,
+    )
+
+@app.post("/config", response_model=ConfigResponse)
+async def update_config(payload: ConfigUpdate):
+    """Update server-side .env values and clear token cache to force re-auth."""
+    to_write = {}
+    if payload.azure_client_id is not None:
+        to_write["AZURE_CLIENT_ID"] = payload.azure_client_id
+    if payload.azure_tenant_id is not None:
+        to_write["AZURE_TENANT_ID"] = payload.azure_tenant_id
+    if payload.mail_from is not None:
+        to_write["MAIL_FROM"] = str(payload.mail_from)
+    write_env(to_write)
+    # Clear token cache so updated IDs require fresh auth
+    try:
+        if TOKEN_CACHE_FILE.exists():
+            TOKEN_CACHE_FILE.unlink(missing_ok=True)
+        _token_cache.clear()
+    except Exception:
+        pass
+    return await get_config()
 
 @app.post("/auth/logout")
 async def auth_logout(payload: AuthInitRequest):
@@ -178,11 +232,14 @@ async def upload_logo(logo: UploadFile = File(...)):
 @app.post("/auth/init", response_model=AuthInitResponse)
 async def auth_init(payload: AuthInitRequest):
     """Initiate device code flow and return code for user to enter."""
-    authority = f"https://login.microsoftonline.com/{payload.azure_tenant_id}"
-    scopes = ["https://graph.microsoft.com/Mail.Send"]
+    tenant_id = payload.azure_tenant_id or ENV_TENANT_ID
+    client_id = payload.azure_client_id or ENV_CLIENT_ID
+    authority = f"https://login.microsoftonline.com/{tenant_id}"
+    # Use full Graph scope URLs
+    scopes = ["https://graph.microsoft.com/User.Read", "https://graph.microsoft.com/Mail.Send"]
     
     app_msal = msal.PublicClientApplication(
-        client_id=payload.azure_client_id,
+        client_id=client_id,
         authority=authority,
     )
     
@@ -191,7 +248,7 @@ async def auth_init(payload: AuthInitRequest):
         raise HTTPException(status_code=500, detail="Failed to create device flow")
     
     # Store flow for completion (in production, use Redis or database)
-    cache_key = f"{payload.azure_client_id}:{payload.azure_tenant_id}"
+    cache_key = f"{client_id}:{tenant_id}"
     _token_cache[f"{cache_key}:flow"] = (app_msal, flow)
     
     return AuthInitResponse(
@@ -204,7 +261,9 @@ async def auth_init(payload: AuthInitRequest):
 @app.post("/auth/complete")
 async def auth_complete(payload: AuthInitRequest):
     """Complete device code flow and cache token."""
-    cache_key = f"{payload.azure_client_id}:{payload.azure_tenant_id}"
+    client_id = payload.azure_client_id or ENV_CLIENT_ID
+    tenant_id = payload.azure_tenant_id or ENV_TENANT_ID
+    cache_key = f"{client_id}:{tenant_id}"
     flow_data = _token_cache.get(f"{cache_key}:flow")
     
     if not flow_data:
@@ -216,6 +275,7 @@ async def auth_complete(payload: AuthInitRequest):
     
     if "access_token" not in result:
         error_msg = result.get("error_description", "Authentication failed")
+        print(f"[auth_complete] Failed: {error_msg}")
         raise HTTPException(status_code=401, detail=error_msg)
     
     # Store full token response (includes refresh_token for auto-refresh)
@@ -225,38 +285,79 @@ async def auth_complete(payload: AuthInitRequest):
     # Persist token to disk
     save_token_cache(_token_cache)
     
-    return {"status": "authenticated"}
+    print(f"[auth_complete] Success. Scopes: {result.get('scope', 'none')}")
+    return {"status": "authenticated", "scopes": result.get("scope", "")}
 
 @app.get("/auth/status")
 async def auth_status(client_id: str, tenant_id: str):
-    """Check if user is authenticated. Fast check - just verifies token exists."""
+    """Check auth state: pending flow vs authenticated."""
+    client_id = client_id or ENV_CLIENT_ID
+    tenant_id = tenant_id or ENV_TENANT_ID
     cache_key = f"{client_id}:{tenant_id}"
-    
-    if cache_key not in _token_cache or cache_key.endswith(":flow"):
-        return {"authenticated": False}
+    # Pending device flow
+    if f"{cache_key}:flow" in _token_cache:
+        return {"authenticated": False, "checking": True}
+    # No tokens yet
+    if cache_key not in _token_cache:
+        return {"authenticated": False, "checking": False}
     
     token_data = _token_cache[cache_key]
     
     # Check if we have token data
     if isinstance(token_data, str):
-        # Old format - assume valid for now
-        return {"authenticated": True}
+        return {"authenticated": True, "checking": False}
     elif "access_token" in token_data:
-        # New format - we have a token
-        return {"authenticated": True}
-    
-    return {"authenticated": False}
+        return {"authenticated": True, "checking": False}
+    return {"authenticated": False, "checking": False}
 
 @app.post("/send/mail")
 async def send_mail(payload: SendMailBody):
     """Send email via Microsoft Graph API."""
-    client_id = payload.azure_client_id or "4bb85405-0fc5-4dcc-b758-f2bb54057a57"
-    tenant_id = payload.azure_tenant_id or "consumers"
-    mail_from = str(payload.mail_from or "beaumeteens@gmail.com")
+    client_id = payload.azure_client_id or ENV_CLIENT_ID
+    tenant_id = payload.azure_tenant_id or ENV_TENANT_ID
+    mail_from = str(payload.mail_from or ENV_MAIL_FROM)
     
     try:
         # Get access token
         access_token = get_access_token(client_id, tenant_id)
+        print(f"[send_mail] Using token (first 20 chars): {access_token[:20]}...")
+        
+        # First verify token works and check mailbox
+        async with httpx.AsyncClient() as client:
+            me_response = await client.get(
+                "https://graph.microsoft.com/v1.0/me",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=10.0
+            )
+            if me_response.status_code == 200:
+                me_data = me_response.json()
+                user_principal = me_data.get('userPrincipalName', 'unknown')
+                print(f"[send_mail] Token valid. User: {user_principal}")
+                
+                # Check if this is a guest account (contains #EXT#)
+                if "#EXT#" in user_principal:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Cannot send mail: You are signed in as a guest account. Guest accounts do not have mailboxes. Please sign in with a user account from your organization (e.g., yourname@yourdomain.onmicrosoft.com) or create one in Azure AD."
+                    )
+                
+                # Check if user has a mailbox by trying to access mailbox settings
+                # Skip for personal accounts (consumers tenant) as they always have mailboxes
+                if tenant_id != "consumers":
+                    mailbox_response = await client.get(
+                        "https://graph.microsoft.com/v1.0/me/mailboxSettings",
+                        headers={"Authorization": f"Bearer {access_token}"},
+                        timeout=10.0
+                    )
+                    if mailbox_response.status_code == 404:
+                        print(f"[send_mail] Mailbox check failed: {mailbox_response.status_code}")
+                        raise HTTPException(
+                            status_code=403,
+                            detail="Cannot send mail: The account does not have an Exchange Online mailbox. Please assign a Microsoft 365 license (E1/E3/E5) to this user in the Azure Portal under 'Licenses'."
+                        )
+                    print(f"[send_mail] Mailbox exists for user {user_principal}")
+            else:
+                print(f"[send_mail] Token validation failed: {me_response.status_code} - {me_response.text}")
         
         # Prepare email payload for Microsoft Graph
         graph_payload = {
@@ -298,12 +399,82 @@ async def send_mail(payload: SendMailBody):
                 }
             else:
                 error_detail = response.text
+                print(f"[send_mail] Full response status: {response.status_code}")
+                print(f"[send_mail] Response headers: {dict(response.headers)}")
+                print(f"[send_mail] Response body: {error_detail}")
+                
+                # Special handling for 401 with empty body (typically mailbox not found)
+                if response.status_code == 401 and not error_detail:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Cannot send mail: The authenticated account does not have an Exchange Online mailbox. Please ensure you're signed in with an account that has email enabled in your Microsoft 365 tenant."
+                    )
+                
+                try:
+                    error_json = response.json()
+                    error_msg = error_json.get('error', {}).get('message', error_detail)
+                    print(f"[send_mail] Parsed error message: {error_msg}")
+                except Exception as parse_err:
+                    print(f"[send_mail] Could not parse JSON: {parse_err}")
+                    error_msg = error_detail if error_detail else "Unknown error (empty response)"
                 raise HTTPException(
                     status_code=response.status_code,
-                    detail=f"Graph API error: {error_detail}"
+                    detail=f"Graph API error: {error_msg}"
                 )
                 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+
+class AuthTestBody(BaseModel):
+    azure_client_id: str | None = None
+    azure_tenant_id: str | None = None
+    mail_from: EmailStr | None = None
+    to: EmailStr | None = None
+    send_test_email: bool | None = False
+
+
+@app.post("/auth/test")
+async def auth_test(payload: AuthTestBody):
+    """Validate credentials: confirm token usable; optionally send a test email."""
+    client_id = payload.azure_client_id or ENV_CLIENT_ID
+    tenant_id = payload.azure_tenant_id or ENV_TENANT_ID
+    try:
+        token = get_access_token(client_id, tenant_id)
+    except HTTPException as e:
+        return {"authenticated": False, "error": "Not authenticated or token invalid"}
+
+    if payload.send_test_email:
+        test_to = str(payload.to or payload.mail_from or ENV_MAIL_FROM)
+        test_payload = SendMailBody(
+            to=test_to,
+            subject="[Credential Test] Mail.Send scope check",
+            body="This is a test email to validate Mail.Send permission.",
+            azure_client_id=client_id,
+            azure_tenant_id=tenant_id,
+            mail_from=payload.mail_from or ENV_MAIL_FROM,
+        )
+        # Reuse send_mail logic via Graph API
+        graph_payload = {
+            "message": {
+                "subject": test_payload.subject,
+                "body": {"contentType": "Text", "content": test_payload.body},
+                "toRecipients": [{"emailAddress": {"address": test_payload.to}}],
+            },
+            "saveToSentItems": "true",
+        }
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://graph.microsoft.com/v1.0/me/sendMail",
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json=graph_payload,
+                timeout=30.0,
+            )
+            if response.status_code != 202:
+                # Return a simple invalid status instead of raising
+                return {"authenticated": False, "mail_send": False, "error": "Graph API error"}
+        return {"authenticated": True, "mail_send": True}
+
+    return {"authenticated": True}

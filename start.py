@@ -152,6 +152,57 @@ def run_uvicorn():
     return subprocess.Popen(cmd, cwd=str(BACKEND), env=env)
 
 
+def check_and_prompt_auth(client_id: str, tenant_id: str):
+    """Check backend auth status; if not connected, initiate device flow and print code+URL."""
+    import http.client
+    import json as _json
+    # Try status first
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", 8000, timeout=2)
+        path = f"/auth/status?client_id={client_id}&tenant_id={tenant_id}"
+        conn.request("GET", path)
+        resp = conn.getresponse()
+        data = _json.loads(resp.read().decode("utf-8"))
+        conn.close()
+        if data.get("authenticated"):
+            print("[start] Azure auth: connected.")
+            return True
+        else:
+            print("[start] Azure auth: not connected. Initiating device flow...")
+    except Exception:
+        print("[start] Warning: Could not check auth status.")
+
+    # Initiate device flow
+    try:
+        payload = _json.dumps({
+            "azure_client_id": client_id,
+            "azure_tenant_id": tenant_id,
+        }).encode("utf-8")
+        conn = http.client.HTTPConnection("127.0.0.1", 8000, timeout=5)
+        conn.request("POST", "/auth/init", body=payload, headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        init_data = _json.loads(resp.read().decode("utf-8"))
+        conn.close()
+        code = init_data.get("user_code")
+        url = init_data.get("verification_uri")
+        if code and url:
+            print("\n" + "=" * 50)
+            print("AZURE SIGN-IN REQUIRED")
+            print("=" * 50)
+            print(f"Verification URL: {url}")
+            print(f"Device Code     : {code}")
+            print("Enter the code at the URL to complete sign-in.")
+            print("=" * 50 + "\n")
+            try:
+                webbrowser.open(url)
+            except Exception:
+                pass
+            return False
+    except Exception as e:
+        print(f"[start] Failed to initiate device flow: {e}")
+    return False
+
+
 def run_frontend():
     node_path = str(NODE_DIR)
     env = os.environ.copy()
@@ -223,6 +274,11 @@ def main():
         p_backend = run_uvicorn()
         p_frontend = run_frontend()
         
+        # Wait for backend and perform auth check before opening browser
+        # Wait for backend health endpoint to avoid 404s on root
+        wait_for_server("127.0.0.1", 8000, "Backend", "/health")
+        # Skip automatic device flow prompt; user will press Connect in UI
+
         # Quick wait for frontend to be ready before opening browser
         print(f"[{time.strftime('%H:%M:%S')}] Waiting for frontend...")
         frontend_start = time.time()
@@ -230,19 +286,17 @@ def main():
         print(f"[{time.strftime('%H:%M:%S')}] Frontend ready: {time.time() - frontend_start:.2f}s")
         
         url = "http://localhost:5173"
-        print(f"[{time.strftime('%H:%M:%S')}] Opening {url}")
+        print(f"Opening {url}")
         try:
             webbrowser.open(url)
         except Exception:
             pass
         
-        total_time = time.time() - start_time
         print("\n" + "=" * 50)
         print("APP RUNNING")
         print("=" * 50)
         print("Backend:  http://127.0.0.1:8000")
         print("Frontend: http://localhost:5173")
-        print(f"Total startup time: {total_time:.2f}s")
         print("Press Ctrl+C to stop")
         print("=" * 50 + "\n")
         
