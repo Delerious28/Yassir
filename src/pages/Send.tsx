@@ -46,7 +46,7 @@ export default function SendPage() {
                   <Button className="w-full sm:w-40" onClick={() => window.location.href = `/campaigns/${c.id}/send`}>
                     Open send tab
                   </Button>
-                  <Button className="w-full sm:w-36" variant="secondary" onClick={async ()=>{
+                  <Button className="w-full sm:w-40" variant="secondary" onClick={async ()=>{
                       const targets = leads
                       for (const lead of targets) {
                         const subject = c.step1.subject
@@ -68,7 +68,7 @@ export default function SendPage() {
                     }}>
                     Force Mail 1
                   </Button>
-                  <Button className="w-full sm:w-36" variant="secondary" onClick={async ()=>{
+                  <Button className="w-full sm:w-40" variant="secondary" onClick={async ()=>{
                       const targets = leads
                       for (const lead of targets) {
                         const subject = (c.step2?.subject ?? c.step1.subject)
