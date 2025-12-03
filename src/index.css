@@ -53,20 +53,6 @@ html, body, #root {
 /* ================================================
    AURORA THEME — Liquid glass inspired by macOS
    (soft blue mist, frosted light layers)
-================================================ */
-.theme-aurora {
-  --bg: 12 16 28;           /* deep navy base */
-  --fg: 236 243 255;        /* cloud white */
-  --card-bg: 18 22 34;      /* smoked glass */
-
-  --border: 140 175 220;    /* cool edge highlight */
-
-  --accent: 128 190 255;    /* macOS blue */
-  --accent2: 185 225 255;   /* polar glow */
-
-  --glass: rgba(255, 255, 255, 0.14);
-  --glass-border: rgba(255, 255, 255, 0.28);
-  --glass-glow: rgba(128, 190, 255, 0.35);
 }
 
 /* ================================================
