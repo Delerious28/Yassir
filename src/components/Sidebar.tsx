@@ -18,14 +18,14 @@ export default function Sidebar() {
   const appLogoUrl = settings.appLogoUrl
   
   return (
-    <aside className="w-64 hidden md:flex flex-col bg-white border-r border-gray-200">
-      <div className="h-16 flex items-center gap-2 px-5 border-b border-gray-200">
+    <aside className="w-64 hidden md:flex flex-col bg-[rgba(var(--card-bg),0.78)] border-r border-[rgb(var(--border))] shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur">
+      <div className="h-16 flex items-center gap-2 px-5 border-b border-[rgb(var(--border))]">
         {appLogoUrl ? (
           <img src={appLogoUrl} alt="Logo" className="w-6 h-6 object-contain" />
         ) : (
           <Mail className="text-brand-600" />
         )}
-        <span className="font-semibold">{appName}</span>
+        <span className="font-semibold text-[rgb(var(--fg))] tracking-tight">{appName}</span>
       </div>
       <nav className="flex-1 p-3">
         {nav.map(({ to, label, icon: Icon }) => (
@@ -33,8 +33,8 @@ export default function Sidebar() {
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md mb-1 font-medium hover:bg-gray-100 ${
-                isActive ? 'text-brand-700 bg-brand-50' : 'text-gray-700'
+              `flex items-center gap-3 px-3 py-2 rounded-lg mb-1 font-medium transition hover:bg-[rgba(var(--accent),0.08)] ${
+                isActive ? 'text-[rgb(var(--fg))] bg-[rgba(var(--accent),0.15)] border border-[rgba(var(--accent),0.25)] shadow-[0_10px_28px_rgba(59,130,246,0.18)]' : 'text-[rgba(var(--fg),0.78)]'
               }`
             }
           >
@@ -43,7 +43,7 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 text-xs text-gray-500">Built for Graph API</div>
+      <div className="p-4 text-xs text-[rgba(var(--fg),0.65)]">Built for Graph API</div>
     </aside>
   )
 }

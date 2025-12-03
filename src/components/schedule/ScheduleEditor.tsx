@@ -38,9 +38,20 @@ export default function ScheduleEditor() {
         </div>
       </Card>
       <Card title="Preview (next 10)">
-        <ul className="space-y-1">
+        <ul className="space-y-2">
           {sampleTimes.map((t, i) => (
-            <li key={i} className="text-sm text-gray-800">{t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</li>
+            <li
+              key={i}
+              className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
+              style={{
+                color: 'rgb(var(--fg))',
+                backgroundColor: 'rgba(var(--fg),0.05)',
+                borderColor: 'rgba(var(--fg),0.12)',
+              }}
+            >
+              <span className="font-semibold">{t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="text-[rgba(var(--fg),0.75)]">Scheduled send</span>
+            </li>
           ))}
         </ul>
       </Card>
