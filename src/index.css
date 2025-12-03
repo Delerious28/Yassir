@@ -1,0 +1,274 @@
+/* ================================================
+   GLOBAL BASE
+================================================ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+:root {
+  --transition: 0.25s ease;
+}
+
+* {
+  transition: background-color var(--transition),
+              color var(--transition),
+              border-color var(--transition),
+              box-shadow var(--transition);
+}
+
+/* ================================================
+   LIGHT THEME — Clean / subtle
+================================================ */
+.theme-light {
+  --bg: 245 246 250;
+  --fg: 28 32 46;
+  --card-bg: 255 255 255;
+  --border: 220 223 230;
+  --accent: 79 70 229;
+}
+
+/* ================================================
+   DARK THEME — Matte futuristic
+================================================ */
+.theme-dark {
+  --bg: 13 17 23;        /* #0D1117 */
+  --fg: 230 237 243;     /* #E6EDF3 */
+  --card-bg: 22 27 34;   /* #161B22 */
+  --border: 48 54 61;    /* #30363D */
+  --accent: 139 156 255; /* soft indigo */
+}
+
+/* ================================================
+   CYBER THEME — NEON CYAN/PINK
+   (Professional + Glassmorphism)
+================================================ */
+.theme-cyber {
+  --bg: 5 6 10;           /* deep near-black */
+  --fg: 220 230 255;      /* icy white-blue */
+  --card-bg: 12 14 20;    /* glass base */
+
+  --border: 0 246 255;    /* cyan border glow */
+
+  --accent: 0 246 255;    /* CYAN accent */
+  --accent2: 255 46 129;  /* PINK accent */
+
+  --glass: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(0, 246, 255, 0.25);
+  --glass-glow: rgba(0, 246, 255, 0.6);
+}
+
+/* ================================================
+   BASE THEME APPLICATION
+================================================ */
+
+html[class^="theme-"] body {
+  background: rgb(var(--bg));
+  color: rgb(var(--fg));
+}
+
+/* ================================================
+   NEON PANEL & TEXT UTILITY CLASSES
+================================================ */
+.neon-panel {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(14px);
+  border-color: rgba(var(--accent), 0.4) !important;
+  border-radius: 1.25rem !important; /* Futuristic rounded */
+}
+
+.neon-text {
+  color: rgb(var(--accent2)) !important;
+  text-shadow: 0 0 10px rgba(var(--accent2), 0.7);
+}
+
+/* ================================================
+   CARD GLASS EFFECT FOR CYBER THEME
+================================================ */
+html.theme-cyber .card,
+html.theme-cyber .border,
+html.theme-cyber .border-r,
+html.theme-cyber .border-b {
+  background: var(--glass) !important;
+  backdrop-filter: blur(12px);
+  border-color: var(--glass-border) !important;
+  box-shadow: 0 0 12px var(--glass-glow);
+}
+
+/* ================================================
+   INPUTS / BUTTONS / UI ELEMENTS
+================================================ */
+
+html.theme-cyber input,
+html.theme-cyber textarea,
+html.theme-cyber select {
+  background-color: rgba(255,255,255,0.03) !important;
+  border-color: var(--glass-border) !important;
+  color: rgb(var(--fg)) !important;
+}
+
+html.theme-cyber input::placeholder {
+  color: rgba(0,246,255,0.5) !important;
+}
+
+html.theme-cyber button {
+  border-color: var(--glass-border) !important;
+  background: rgba(0,246,255,0.12) !important;
+  color: rgb(var(--fg)) !important;
+  box-shadow: 0 0 15px rgba(0,246,255,0.5);
+}
+
+html.theme-cyber button:hover {
+  background: rgba(255,46,129,0.15) !important;
+  border-color: rgba(255,46,129,0.4) !important;
+  box-shadow: 0 0 20px rgba(255,46,129,0.6);
+}
+
+/* ================================================
+   TEXT COLORS
+================================================ */
+
+html.theme-cyber h1,
+html.theme-cyber h2,
+html.theme-cyber h3,
+html.theme-cyber .font-semibold,
+html.theme-cyber .font-medium {
+  text-shadow: 0 0 10px rgba(0,246,255,0.8);
+}
+
+html.theme-cyber a {
+  color: rgb(var(--accent2));
+  text-shadow: 0 0 8px rgba(255,46,129,0.8);
+}
+
+html.theme-cyber .text-muted {
+  color: rgba(220,220,255,0.5) !important;
+}
+
+/* ============================================================
+   CYBER THEME — ANIMATED NEON EFFECTS
+   (Slow breathing glow around all core UI elements)
+============================================================ */
+
+@keyframes cyber-glow {
+  0% {
+    box-shadow: 0 0 6px rgba(0, 246, 255, 0.4), 0 0 12px rgba(0, 246, 255, 0.2);
+    border-color: rgba(0, 246, 255, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(255, 46, 129, 0.7), 0 0 28px rgba(255, 46, 129, 0.4);
+    border-color: rgba(255, 46, 129, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 6px rgba(0, 246, 255, 0.4), 0 0 12px rgba(0, 246, 255, 0.2);
+    border-color: rgba(0, 246, 255, 0.25);
+  }
+}
+
+/* ================================================
+   Animated cards
+================================================ */
+
+html.theme-cyber .card,
+html.theme-cyber .border,
+html.theme-cyber .rounded-lg {
+  animation: cyber-glow 4s ease-in-out infinite;
+}
+
+/* ================================================
+   Animated buttons
+================================================ */
+
+html.theme-cyber button {
+  animation: cyber-glow 3.5s ease-in-out infinite;
+}
+
+/* Stronger glow when hovered */
+html.theme-cyber button:hover {
+  animation-duration: 2s;
+  background: rgba(255, 46, 129, 0.22) !important;
+}
+
+/* ================================================
+   Animated focus outline for inputs
+================================================ */
+
+html.theme-cyber input:focus,
+html.theme-cyber textarea:focus,
+html.theme-cyber select:focus {
+  outline: none !important;
+  animation: cyber-glow 2.2s ease-in-out infinite;
+}
+
+/* ================================================
+   Accent animated underline for links
+================================================ */
+
+html.theme-cyber a:hover {
+  text-shadow: 0 0 12px rgba(255, 46, 129, 0.8),
+               0 0 20px rgba(0, 246, 255, 0.7);
+}
+
+/* ================================================
+   DARK THEME STYLES
+================================================ */
+
+html.theme-dark,
+html.theme-dark body,
+html.theme-dark #root { 
+  background-color: rgb(var(--bg)) !important; 
+  color: rgb(var(--fg)) !important; 
+}
+
+html.theme-dark aside,
+html.theme-dark .border-r,
+html.theme-dark .border-b { 
+  background-color: rgb(var(--card-bg)) !important; 
+  color: rgb(var(--fg)) !important;
+  border-color: rgb(var(--border)) !important;
+}
+
+html.theme-dark .hover\:bg-gray-100:hover { 
+  background-color: rgb(55 65 81) !important;
+}
+
+/* ================================================
+   CYBER THEME BODY & ROOT
+================================================ */
+
+html.theme-cyber,
+html.theme-cyber body,
+html.theme-cyber #root {
+  background-color: rgb(var(--bg)) !important;
+  color: rgb(var(--fg)) !important;
+}
+
+html.theme-cyber aside,
+html.theme-cyber .border-r,
+html.theme-cyber .border-b {
+  background-color: rgb(var(--card-bg)) !important;
+  color: rgb(var(--fg)) !important;
+  border-color: rgba(0,246,255,0.4) !important;
+}
+
+/* Icon image overlay - hide emoji when image loads */
+.w-10.h-10 {
+  position: relative;
+}
+.w-10.h-10 img {
+  position: absolute;
+  z-index: 10;
+}
+.w-10.h-10 span {
+  position: relative;
+  z-index: 5;
+}
+
+html.theme-light body { 
+  background-color: rgb(var(--bg)); 
+  color: rgb(var(--fg)); 
+}
+

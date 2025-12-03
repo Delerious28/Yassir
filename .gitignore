@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Build outputs
+dist/
+build/
+.vite/
+*.egg-info/
+
+# Environment & Secrets
+.env
+.env.local
+.token_cache.json
+backend/.token_cache.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs & Temp
+*.log
+.node/
+.setup_complete
+
+# Uploaded files
+uploads/
+backend/uploads/
