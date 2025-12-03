@@ -11,10 +11,10 @@ export default function Topbar() {
     pathname.startsWith('/settings') ? 'Settings' : 'Dashboard'
 
   return (
-    <header className="h-16 bg-[rgba(var(--card-bg),0.78)] border-b border-[rgb(var(--border))] flex items-center shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur">
+    <header className="h-16 flex items-center border-b border-[rgb(var(--border))] bg-[rgb(var(--card-bg))]">
       <div className="max-w-7xl mx-auto w-full px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/dashboard" className="font-semibold text-[rgb(var(--fg))] tracking-tight">{title}</Link>
+          <Link to="/dashboard" className="font-semibold text-lg tracking-tight text-[rgb(var(--fg))]">{title}</Link>
         </div>
         <ConnectionStatus />
       </div>

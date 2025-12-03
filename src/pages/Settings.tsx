@@ -23,7 +23,6 @@ export default function Settings() {
 
   const [uploadedLogoPath, setUploadedLogoPath] = useState<string | null>(null)
 
-  /* Apply preview theme in real-time */
   useEffect(() => {
     const html = document.documentElement
     html.classList.remove('theme-light', 'theme-dark')
@@ -38,17 +37,11 @@ export default function Settings() {
     setLocalSettings(settings)
   }, [settings])
 
-  useEffect(() => () => {
-    // reset theme if user leaves preview on
-    document.documentElement.className = `theme-${theme}`
-  }, [])
-
   const resetAll = () => {
     localStorage.removeItem("outreach-state")
     location.reload()
   }
 
-  /* Logo Upload */
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -69,7 +62,6 @@ export default function Settings() {
     }
   }
 
-  /* Save Settings */
   function saveAllSettings() {
     setSaveStatus("saving")
     setSettings(localSettings)
@@ -84,7 +76,6 @@ export default function Settings() {
     }, 500)
   }
 
-  /* Authentication */
   async function checkAuth() {
     const clientId = localSettings.azure_client_id || "4bb85405-0fc5-4dcc-b758-f2bb54057a57"
     const tenantId = localSettings.azure_tenant_id || "consumers"
@@ -161,248 +152,214 @@ export default function Settings() {
       id: 'light',
       label: 'Light',
       icon: '☀️',
-      description: 'Soft whites with a calming blue accent',
-      accentClass: 'from-blue-500/15 via-blue-500/10 to-transparent'
+      description: 'Soft whites with a calm blue accent'
     },
     {
       id: 'dark',
       label: 'Dark',
       icon: '🌙',
-      description: 'Matte charcoal with teal highlights',
-      accentClass: 'from-cyan-400/15 via-cyan-500/10 to-transparent'
-    },
-    {
-      id: 'aurora',
-      label: 'Aurora',
-      icon: '✨',
-      description: 'Glassmorphic mint & orchid neon',
-      accentClass: 'from-emerald-400/20 via-pink-400/10 to-transparent'
+      description: 'Matte charcoal with teal highlights'
     }
   ]), [])
 
   return (
-    <div className="min-h-full p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="relative overflow-hidden rounded-2xl p-8 border" style={{ backgroundColor: 'rgb(var(--card-bg))', borderColor: 'rgb(var(--border))' }}>
-          <div className="absolute inset-0 opacity-80 pointer-events-none bg-gradient-to-r from-transparent via-white/5 to-white/10" />
-          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
-              <p className="text-sm uppercase tracking-[0.2em] font-semibold" style={{ color: 'rgba(var(--fg),0.65)' }}>Control Center</p>
-              <h1 className="text-3xl font-bold" style={{ color: 'rgb(var(--fg))' }}>Settings</h1>
-              <p className="text-sm" style={{ color: 'rgba(var(--fg),0.65)' }}>
-                Personalize the look and feel, connect your account, and keep your outreach workspace tidy.
-              </p>
-              {previewTheme && (
-                <div className="inline-flex items-center gap-3 px-3 py-2 rounded-lg border" style={{ borderColor: 'rgb(var(--accent))', backgroundColor: 'rgba(var(--accent),0.08)', color: 'rgb(var(--fg))' }}>
-                  <span className="text-lg">👁️</span>
-                  <span className="text-sm">Previewing <strong>{previewTheme}</strong> theme</span>
-                  <Button variant="secondary" onClick={() => setPreviewTheme(null)} className="ml-1">Cancel</Button>
+    <div className="space-y-6">
+      <div className="p-6 border border-[rgb(var(--border))] rounded-2xl bg-[rgb(var(--card-bg))] space-y-2">
+        <p className="text-sm font-semibold text-[rgb(var(--muted))] uppercase tracking-wide">Control center</p>
+        <h1 className="text-3xl font-bold text-[rgb(var(--fg))]">Settings</h1>
+        <p className="text-sm text-[rgb(var(--muted))]">Clean, flat controls for theme, authentication, and workspace identity.</p>
+        {previewTheme && (
+          <div className="inline-flex items-center gap-3 px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgba(var(--fg),0.04)] text-[rgb(var(--fg))]">
+            <span className="text-lg">👁️</span>
+            <span className="text-sm">Previewing <strong>{previewTheme}</strong> theme</span>
+            <Button variant="secondary" onClick={() => setPreviewTheme(null)} className="ml-1">Cancel</Button>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2 space-y-6">
+          <div className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card-bg))] p-6 space-y-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[rgb(var(--muted))]">Account</p>
+                <h2 className="text-xl font-semibold text-[rgb(var(--fg))]">Authentication</h2>
+                <p className="text-sm text-[rgb(var(--muted))]">Link your Microsoft account to send campaigns securely.</p>
+              </div>
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${authStatus==='authenticated'?'bg-green-50 text-green-600 border-green-200':authStatus==='checking'?'bg-amber-50 text-amber-600 border-amber-200':'bg-rose-50 text-rose-600 border-rose-200'}`}>
+                {authStatus === 'authenticated' ? 'Connected' : authStatus === 'checking' ? 'Checking' : 'Not Connected'}
+              </span>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[rgb(var(--fg))]">Client ID</label>
+                <input
+                  className="rounded-lg px-4 py-2.5 text-sm w-full font-mono border"
+                  style={{ backgroundColor: 'rgb(var(--card-bg))', color: 'rgb(var(--fg))', borderColor: 'rgb(var(--border))' }}
+                  value={localSettings.azure_client_id ?? ''}
+                  onChange={e=>setLocalSettings({ ...localSettings, azure_client_id: e.target.value })}
+                  placeholder="4bb85405-..."
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[rgb(var(--fg))]">Tenant ID</label>
+                <input
+                  className="rounded-lg px-4 py-2.5 text-sm w-full border"
+                  style={{ backgroundColor: 'rgb(var(--card-bg))', color: 'rgb(var(--fg))', borderColor: 'rgb(var(--border))' }}
+                  value={localSettings.azure_tenant_id ?? ''}
+                  onChange={e=>setLocalSettings({ ...localSettings, azure_tenant_id: e.target.value })}
+                  placeholder="consumers"
+                />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[rgb(var(--fg))]">From Email</label>
+                <input
+                  className="rounded-lg px-4 py-2.5 text-sm w-full border"
+                  style={{ backgroundColor: 'rgb(var(--card-bg))', color: 'rgb(var(--fg))', borderColor: 'rgb(var(--border))' }}
+                  value={localSettings.mail_from ?? ''}
+                  onChange={e=>setLocalSettings({ ...localSettings, mail_from: e.target.value })}
+                  placeholder="your@email.com"
+                />
+              </div>
+              <div className="flex items-end gap-3">
+                {authStatus === 'not_authenticated' && !deviceCode && (
+                  <Button onClick={startAuth} className="w-full">Connect Account</Button>
+                )}
+                {authStatus === 'authenticated' && (
+                  <Button variant="secondary" onClick={checkAuth} className="w-full">Refresh Status</Button>
+                )}
+              </div>
+            </div>
+
+            {deviceCode && verificationUri && (
+              <div className="rounded-xl border border-[rgb(var(--border))] p-4 bg-[rgb(var(--card-bg))]">
+                <div className="font-semibold mb-2 text-[rgb(var(--fg))]">Complete authentication</div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="rounded-lg p-3 border border-[rgb(var(--border))] bg-[rgb(var(--bg))]">
+                    <div className="text-xs mb-1 text-[rgb(var(--muted))]">Visit URL</div>
+                    <a href={verificationUri} target="_blank" rel="noopener noreferrer" className="font-mono text-xs font-semibold hover:underline break-all text-[rgb(var(--accent))]">
+                      {verificationUri}
+                    </a>
+                  </div>
+                  <div className="rounded-lg p-3 border border-[rgb(var(--border))] bg-[rgb(var(--bg))]">
+                    <div className="text-xs mb-1 text-[rgb(var(--muted))]">Enter code</div>
+                    <div className="text-xl font-bold font-mono tracking-wider text-[rgb(var(--accent))]">{deviceCode}</div>
+                  </div>
                 </div>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3 lg:w-1/2">
-              <div className="rounded-xl border px-4 py-3" style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgba(var(--accent),0.06)' }}>
-                <p className="text-xs uppercase tracking-wide" style={{ color: 'rgba(var(--fg),0.6)' }}>Connection</p>
-                <p className="text-lg font-semibold" style={{ color: 'rgb(var(--fg))' }}>{status === 'connected' ? 'Ready to send' : 'Not connected'}</p>
-                <p className="text-[11px] mt-1" style={{ color: 'rgba(var(--fg),0.55)' }}>Microsoft authentication status</p>
+                {polling && (
+                  <div className="text-xs flex items-center gap-2 mt-3 text-[rgb(var(--muted))]">
+                    <div className="animate-spin h-3 w-3 border-2 rounded-full" style={{ borderColor: 'rgb(var(--accent))', borderTopColor: 'transparent' }}></div>
+                    Waiting for authentication...
+                  </div>
+                )}
               </div>
-              <div className="rounded-xl border px-4 py-3" style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgba(var(--accent),0.04)' }}>
-                <p className="text-xs uppercase tracking-wide" style={{ color: 'rgba(var(--fg),0.6)' }}>Theme</p>
-                <p className="text-lg font-semibold" style={{ color: 'rgb(var(--fg))' }}>{activeTheme}</p>
-                <p className="text-[11px] mt-1" style={{ color: 'rgba(var(--fg),0.55)' }}>Live preview updates instantly</p>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card-bg))] p-6 space-y-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[rgb(var(--muted))]">Branding</p>
+                <h2 className="text-xl font-semibold text-[rgb(var(--fg))]">Identity</h2>
+                <p className="text-sm text-[rgb(var(--muted))]">Name your workspace and upload a logo.</p>
               </div>
             </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[rgb(var(--fg))]">App Name</label>
+                <input
+                  className="rounded-lg px-4 py-2.5 text-sm w-full border"
+                  style={{ backgroundColor: 'rgb(var(--card-bg))', color: 'rgb(var(--fg))', borderColor: 'rgb(var(--border))' }}
+                  value={localSettings.appName ?? ''}
+                  onChange={e=>setLocalSettings({ ...localSettings, appName: e.target.value })}
+                  placeholder="Outreach"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[rgb(var(--fg))]">Upload Logo</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="rounded-lg px-4 py-2.5 text-sm w-full border cursor-pointer"
+                    style={{ backgroundColor: 'rgb(var(--card-bg))', color: 'rgb(var(--fg))', borderColor: 'rgb(var(--border))' }}
+                    onChange={handleLogoUpload}
+                  />
+                </div>
+                <p className="text-xs text-[rgb(var(--muted))]">Use a square PNG or SVG for best results.</p>
+              </div>
+            </div>
+
+            {(uploadedLogoPath || localSettings.appLogoUrl) && (
+              <div className="p-4 border border-[rgb(var(--border))] rounded-xl flex items-center gap-3 bg-[rgb(var(--card-bg))]">
+                <img src={uploadedLogoPath || localSettings.appLogoUrl} alt="Logo preview" className="w-12 h-12 object-contain rounded-lg" />
+                <div>
+                  <p className="text-sm font-semibold text-[rgb(var(--fg))]">Current logo</p>
+                  <p className="text-xs text-[rgb(var(--muted))]">Displayed across your navigation and outbound emails.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-2 space-y-6">
-            <div className="rounded-2xl border p-6 space-y-6" style={{ backgroundColor: 'rgb(var(--card-bg))', borderColor: 'rgb(var(--border))' }}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-wide" style={{ color: 'rgba(var(--fg),0.55)' }}>Account</p>
-                  <h2 className="text-xl font-semibold" style={{ color: 'rgb(var(--fg))' }}>Authentication</h2>
-                  <p className="text-sm mt-1" style={{ color: 'rgba(var(--fg),0.65)' }}>Link your Microsoft account to send campaigns securely.</p>
-                </div>
-                <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${authStatus==='authenticated'?'bg-green-500/10 text-green-500 border-green-400/40':authStatus==='checking'?'bg-amber-500/10 text-amber-500 border-amber-400/40':'bg-rose-500/10 text-rose-500 border-rose-400/40'}`}>
-                  {authStatus === 'authenticated' ? 'Connected' : authStatus === 'checking' ? 'Checking' : 'Not Connected'}
-                </span>
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card-bg))] p-6 space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[rgb(var(--muted))]">Appearance</p>
+                <h2 className="text-xl font-semibold text-[rgb(var(--fg))]">Theme</h2>
+                <p className="text-sm text-[rgb(var(--muted))]">Preview each palette and save the one you like.</p>
               </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" style={{ color: 'rgb(var(--fg))' }}>Client ID</label>
-                  <input
-                    className="rounded-lg px-4 py-2.5 text-sm w-full font-mono border"
-                    style={{ backgroundColor: 'rgb(var(--bg))', color: 'rgb(var(--fg))', borderColor: 'rgb(var(--border))' }}
-                    value={localSettings.azure_client_id ?? ''}
-                    onChange={e=>setLocalSettings({ ...localSettings, azure_client_id: e.target.value })}
-                    placeholder="4bb85405-..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" style={{ color: 'rgb(var(--fg))' }}>Tenant ID</label>
-                  <input
-                    className="rounded-lg px-4 py-2.5 text-sm w-full border"
-                    style={{ backgroundColor: 'rgb(var(--bg))', color: 'rgb(var(--fg))', borderColor: 'rgb(var(--border))' }}
-                    value={localSettings.azure_tenant_id ?? ''}
-                    onChange={e=>setLocalSettings({ ...localSettings, azure_tenant_id: e.target.value })}
-                    placeholder="consumers"
-                  />
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" style={{ color: 'rgb(var(--fg))' }}>From Email</label>
-                  <input
-                    className="rounded-lg px-4 py-2.5 text-sm w-full border"
-                    style={{ backgroundColor: 'rgb(var(--bg))', color: 'rgb(var(--fg))', borderColor: 'rgb(var(--border))' }}
-                    value={localSettings.mail_from ?? ''}
-                    onChange={e=>setLocalSettings({ ...localSettings, mail_from: e.target.value })}
-                    placeholder="your@email.com"
-                  />
-                </div>
-                <div className="flex items-end gap-3">
-                  {authStatus === 'not_authenticated' && !deviceCode && (
-                    <Button onClick={startAuth} className="w-full">Connect Account</Button>
-                  )}
-                  {authStatus === 'authenticated' && (
-                    <Button variant="secondary" onClick={checkAuth} className="w-full">Refresh Status</Button>
-                  )}
-                </div>
-              </div>
-
-              {deviceCode && verificationUri && (
-                <div className="rounded-xl border p-4" style={{ borderColor: 'rgb(var(--border))', backgroundColor: 'rgba(var(--accent),0.04)' }}>
-                  <div className="font-semibold mb-2" style={{ color: 'rgb(var(--fg))' }}>Complete authentication</div>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="rounded-lg p-3 border" style={{ backgroundColor: 'rgb(var(--bg))', borderColor: 'rgb(var(--border))' }}>
-                      <div className="text-xs mb-1" style={{ color: 'rgba(var(--fg), 0.6)' }}>Visit URL</div>
-                      <a href={verificationUri} target="_blank" rel="noopener noreferrer" className="font-mono text-xs font-semibold hover:underline break-all" style={{ color: 'rgb(var(--accent))' }}>
-                        {verificationUri}
-                      </a>
-                    </div>
-                    <div className="rounded-lg p-3 border" style={{ backgroundColor: 'rgb(var(--bg))', borderColor: 'rgb(var(--border))' }}>
-                      <div className="text-xs mb-1" style={{ color: 'rgba(var(--fg), 0.6)' }}>Enter code</div>
-                      <div className="text-xl font-bold font-mono tracking-wider" style={{ color: 'rgb(var(--accent))' }}>{deviceCode}</div>
-                    </div>
-                  </div>
-                  {polling && (
-                    <div className="text-xs flex items-center gap-2 mt-3" style={{ color: 'rgba(var(--fg), 0.6)' }}>
-                      <div className="animate-spin h-3 w-3 border-2 rounded-full" style={{ borderColor: 'rgb(var(--accent))', borderTopColor: 'transparent' }}></div>
-                      Waiting for authentication...
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
-            <div className="rounded-2xl border p-6 space-y-6" style={{ backgroundColor: 'rgb(var(--card-bg))', borderColor: 'rgb(var(--border))' }}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-wide" style={{ color: 'rgba(var(--fg),0.55)' }}>Branding</p>
-                  <h2 className="text-xl font-semibold" style={{ color: 'rgb(var(--fg))' }}>Identity</h2>
-                  <p className="text-sm mt-1" style={{ color: 'rgba(var(--fg),0.65)' }}>Name your workspace and upload a logo for emails.</p>
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" style={{ color: 'rgb(var(--fg))' }}>App Name</label>
-                  <input
-                    className="rounded-lg px-4 py-2.5 text-sm w-full border"
-                    style={{ backgroundColor: 'rgb(var(--bg))', color: 'rgb(var(--fg))', borderColor: 'rgb(var(--border))' }}
-                    value={localSettings.appName ?? ''}
-                    onChange={e=>setLocalSettings({ ...localSettings, appName: e.target.value })}
-                    placeholder="Outreach"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" style={{ color: 'rgb(var(--fg))' }}>Upload Logo</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="rounded-lg px-4 py-2.5 text-sm w-full border cursor-pointer"
-                      style={{ backgroundColor: 'rgb(var(--bg))', color: 'rgb(var(--fg))', borderColor: 'rgb(var(--border))' }}
-                      onChange={handleLogoUpload}
-                    />
+            <div className="space-y-3">
+              {themeOptions.map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => setPreviewTheme(opt.id)}
+                  className={`w-full text-left border rounded-xl p-4 flex items-start gap-3 transition-all ${activeTheme === opt.id ? 'border-[rgb(var(--accent))]' : 'border-[rgb(var(--border))]'}`}
+                  style={{ backgroundColor: activeTheme === opt.id ? 'rgba(var(--accent),0.08)' : 'rgb(var(--card-bg))' }}
+                >
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[rgba(var(--fg),0.06)]">
+                    <span className="text-xl">{opt.icon}</span>
                   </div>
-                  <p className="text-xs" style={{ color: 'rgba(var(--fg), 0.55)' }}>Use a square PNG or SVG for best results.</p>
-                </div>
-              </div>
-
-              {(uploadedLogoPath || localSettings.appLogoUrl) && (
-                <div className="p-4 border rounded-xl flex items-center gap-3" style={{ backgroundColor: 'rgba(var(--accent),0.05)', borderColor: 'rgb(var(--border))' }}>
-                  <img src={uploadedLogoPath || localSettings.appLogoUrl} alt="Logo preview" className="w-12 h-12 object-contain rounded-lg" />
                   <div>
-                    <p className="text-sm font-semibold" style={{ color: 'rgb(var(--fg))' }}>Current logo</p>
-                    <p className="text-xs" style={{ color: 'rgba(var(--fg), 0.55)' }}>Displayed across your navigation and outbound emails.</p>
+                    <p className="font-semibold text-[rgb(var(--fg))]">{opt.label}</p>
+                    <p className="text-xs mt-1 text-[rgb(var(--muted))]">{opt.description}</p>
                   </div>
-                </div>
-              )}
+                </button>
+              ))}
             </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="rounded-2xl border p-6 space-y-4" style={{ backgroundColor: 'rgb(var(--card-bg))', borderColor: 'rgb(var(--border))' }}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-wide" style={{ color: 'rgba(var(--fg),0.55)' }}>Appearance</p>
-                  <h2 className="text-xl font-semibold" style={{ color: 'rgb(var(--fg))' }}>Theme</h2>
-                  <p className="text-sm mt-1" style={{ color: 'rgba(var(--fg),0.65)' }}>Preview each palette and save the one you like.</p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {themeOptions.map(opt => (
-                  <button
-                    key={opt.id}
-                    onClick={() => setPreviewTheme(opt.id)}
-                    className={`w-full text-left border rounded-xl p-4 flex items-start gap-3 transition-all ${activeTheme === opt.id ? 'ring-2 ring-[rgb(var(--accent))]' : ''}`}
-                    style={{
-                      borderColor: activeTheme === opt.id ? 'rgb(var(--accent))' : 'rgb(var(--border))',
-                      backgroundColor: activeTheme === opt.id ? 'rgba(var(--accent),0.08)' : 'rgba(var(--accent),0.03)'
-                    }}
-                  >
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br ${opt.accentClass}`}>
-                      <span className="text-xl">{opt.icon}</span>
-                    </div>
-                    <div>
-                      <p className="font-semibold" style={{ color: 'rgb(var(--fg))' }}>{opt.label}</p>
-                      <p className="text-xs mt-1" style={{ color: 'rgba(var(--fg),0.65)' }}>{opt.description}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <div className="text-xs px-3 py-2 rounded-lg border" style={{ backgroundColor: 'rgba(var(--accent),0.04)', borderColor: 'rgb(var(--border))', color: 'rgba(var(--fg),0.7)' }}>
-                💡 Click a theme to preview instantly. Saving applies it everywhere.
-              </div>
+            <div className="text-xs px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgba(var(--fg),0.04)] text-[rgb(var(--muted))]">
+              💡 Click a theme to preview instantly. Saving applies it everywhere.
             </div>
 
-            <div className="rounded-2xl border p-6 space-y-3" style={{ backgroundColor: 'rgb(var(--card-bg))', borderColor: 'rgb(var(--border))' }}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(var(--accent),0.15)' }}>🗑️</div>
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: 'rgb(var(--fg))' }}>Data cleanup</p>
-                  <p className="text-xs" style={{ color: 'rgba(var(--fg),0.65)' }}>Remove locally saved leads, campaigns, logs, and settings.</p>
-                </div>
+          <div className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card-bg))] p-6 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[rgba(var(--accent),0.1)]">🗑️</div>
+              <div>
+                <p className="text-sm font-semibold text-[rgb(var(--fg))]">Data cleanup</p>
+                <p className="text-xs text-[rgb(var(--muted))]">Remove locally saved leads, campaigns, logs, and settings.</p>
               </div>
-              <Button variant="secondary" onClick={resetAll} className="w-full">Clear All Data</Button>
             </div>
+            <Button variant="secondary" onClick={resetAll} className="w-full">Clear All Data</Button>
           </div>
         </div>
+      </div>
 
-        <div className="flex justify-end pt-2">
-          <Button
-            onClick={saveAllSettings}
-            disabled={saveStatus === 'saving'}
-            className="px-8 py-3"
-          >
-            {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? '✓ Saved!' : 'Save All Settings'}
-          </Button>
-        </div>
+      <div className="flex justify-end pt-2">
+        <Button
+          onClick={saveAllSettings}
+          disabled={saveStatus === 'saving'}
+          className="px-8 py-3"
+        >
+          {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? '✓ Saved!' : 'Save All Settings'}
+        </Button>
       </div>
     </div>
   )

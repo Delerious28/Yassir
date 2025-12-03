@@ -16,34 +16,36 @@ export default function Sidebar() {
   const settings = useStore(s => s.settings)
   const appName = settings.appName || 'Outreach'
   const appLogoUrl = settings.appLogoUrl
-  
+
   return (
-    <aside className="w-64 hidden md:flex flex-col bg-[rgba(var(--card-bg),0.78)] border-r border-[rgb(var(--border))] shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur">
-      <div className="h-16 flex items-center gap-2 px-5 border-b border-[rgb(var(--border))]">
+    <aside className="w-64 hidden md:flex flex-col border-r border-[rgb(var(--border))] bg-[rgb(var(--card-bg))]">
+      <div className="h-16 flex items-center gap-3 px-5 border-b border-[rgb(var(--border))]">
         {appLogoUrl ? (
-          <img src={appLogoUrl} alt="Logo" className="w-6 h-6 object-contain" />
+          <img src={appLogoUrl} alt="Logo" className="w-7 h-7 object-contain" />
         ) : (
-          <Mail className="text-brand-600" />
+          <Mail className="text-[rgb(var(--accent))]" />
         )}
-        <span className="font-semibold text-[rgb(var(--fg))] tracking-tight">{appName}</span>
+        <span className="font-semibold tracking-tight text-[rgb(var(--fg))]">{appName}</span>
       </div>
-      <nav className="flex-1 p-3">
+      <nav className="flex-1 p-3 space-y-1">
         {nav.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg mb-1 font-medium transition hover:bg-[rgba(var(--accent),0.08)] ${
-                isActive ? 'text-[rgb(var(--fg))] bg-[rgba(var(--accent),0.15)] border border-[rgba(var(--accent),0.25)] shadow-[0_10px_28px_rgba(59,130,246,0.18)]' : 'text-[rgba(var(--fg),0.78)]'
+              `flex items-center gap-3 px-3 py-2 rounded-lg border transition ${
+                isActive
+                  ? 'border-[rgb(var(--accent))] bg-[rgba(var(--accent),0.1)] text-[rgb(var(--fg))]'
+                  : 'border-transparent text-[rgba(var(--fg),0.8)] hover:border-[rgb(var(--border))] hover:bg-[rgba(var(--fg),0.04)]'
               }`
             }
           >
-            <Icon size={20} />
-            {label}
+            <Icon size={18} />
+            <span className="text-sm font-medium">{label}</span>
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 text-xs text-[rgba(var(--fg),0.65)]">Built for Graph API</div>
+      <div className="p-4 text-xs text-[rgb(var(--muted))]">Built for Graph API</div>
     </aside>
   )
 }

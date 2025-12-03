@@ -73,17 +73,14 @@ function applyTheme(theme: UiTheme) {
 
 export const useStore = create<State & Actions>((set, get) => {
   const loadedState = loadState()
-  if ((loadedState as any).uiTheme === 'cyber') {
-    (loadedState as any).uiTheme = 'aurora'
+  if (loadedState.uiTheme && loadedState.uiTheme !== 'light' && loadedState.uiTheme !== 'dark') {
+    loadedState.uiTheme = 'light'
   }
   const initialState = { ...initial, ...loadedState }
 
   // Apply theme immediately on load
   if (typeof document !== 'undefined') {
-    const root = document.documentElement
-    root.classList.remove('theme-light', 'theme-dark', 'theme-aurora')
-    const cls = initialState.uiTheme === 'dark' ? 'theme-dark' : initialState.uiTheme === 'aurora' ? 'theme-aurora' : 'theme-light'
-    root.classList.add(cls)
+    applyTheme(initialState.uiTheme)
   }
   
   return {
@@ -133,10 +130,7 @@ try {
   const unsub = useStore.subscribe((state) => {
     saveState(state)
     // Apply theme to document root
-    const root = document.documentElement
-    root.classList.remove('theme-light', 'theme-dark', 'theme-aurora')
-    const cls = state.uiTheme === 'dark' ? 'theme-dark' : state.uiTheme === 'aurora' ? 'theme-aurora' : 'theme-light'
-    root.classList.add(cls)
+    applyTheme(state.uiTheme)
   })
   // ;(window as any).__outreach_unsub = unsub
 } catch {

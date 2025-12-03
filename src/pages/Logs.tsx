@@ -1,5 +1,4 @@
 import LogsTable from '../components/logs/LogsTable'
-import Card from '../components/ui/Card'
 import { useStore } from '../store/store'
 
 export default function Logs() {
@@ -8,26 +7,24 @@ export default function Logs() {
   const step2 = logs.filter(l => l.step === 2).length
 
   return (
-    <div className="grid gap-5">
-      <Card className="bg-gradient-to-r from-[rgba(var(--accent),0.1)] to-[rgba(var(--accent2),0.08)]">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-[rgba(var(--fg),0.6)]">Delivery log</p>
-            <h1 className="text-2xl font-bold tracking-tight">See what went out and when</h1>
-            <p className="text-[rgba(var(--fg),0.75)] mt-1">Use this to reconcile send history and validate cadence.</p>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-[rgb(var(--muted))] uppercase tracking-wide">Logs</p>
+          <h1 className="text-3xl font-bold text-[rgb(var(--fg))]">Delivery history</h1>
+          <p className="text-sm text-[rgb(var(--muted))]">Straightforward tables for auditing each send.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 rounded-lg border border-[rgb(var(--border))] text-center">
+            <div className="text-2xl font-semibold">{step1}</div>
+            <div className="text-xs text-[rgb(var(--muted))]">Mail 1</div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-lg bg-[rgba(var(--accent),0.1)] text-center">
-              <div className="text-2xl font-semibold">{step1}</div>
-              <div className="text-xs text-[rgba(var(--fg),0.65)]">Mail 1</div>
-            </div>
-            <div className="p-3 rounded-lg bg-[rgba(var(--accent2),0.1)] text-center">
-              <div className="text-2xl font-semibold">{step2}</div>
-              <div className="text-xs text-[rgba(var(--fg),0.65)]">Mail 2</div>
-            </div>
+          <div className="p-3 rounded-lg border border-[rgb(var(--border))] text-center">
+            <div className="text-2xl font-semibold">{step2}</div>
+            <div className="text-xs text-[rgb(var(--muted))]">Mail 2</div>
           </div>
         </div>
-      </Card>
+      </div>
 
       <LogsTable />
     </div>

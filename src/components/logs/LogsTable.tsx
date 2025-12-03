@@ -19,7 +19,7 @@ export default function LogsTable() {
         <TBody>
           {logs.length === 0 && (
             <TR>
-              <td className="text-gray-500 p-4 text-center" colSpan={4}>No logs yet.</td>
+              <td className="text-[rgb(var(--muted))] p-4 text-center" colSpan={4}>No logs yet.</td>
             </TR>
           )}
           {logs.map(l => (

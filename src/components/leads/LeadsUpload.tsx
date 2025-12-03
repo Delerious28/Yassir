@@ -44,13 +44,13 @@ export default function LeadsUpload() {
         onDragOver={(e)=>{ e.preventDefault(); setDragOver(true) }}
         onDragLeave={()=>setDragOver(false)}
         onDrop={onDrop}
-        className={`border-2 border-dashed rounded-lg p-6 text-center ${dragOver ? 'border-brand-500 bg-brand-50' : 'border-gray-300 bg-gray-50'}`}
+        className={`border-2 border-dashed rounded-lg p-6 text-center ${dragOver ? 'border-[rgb(var(--accent))] bg-[rgba(var(--accent),0.08)]' : 'border-[rgb(var(--border))] bg-[rgb(var(--bg))]'}`}
       >
-        <div className="mb-3 text-sm text-gray-700">Drop a CSV here or select a file.</div>
+        <div className="mb-3 text-sm text-[rgb(var(--muted))]">Drop a CSV here or select a file.</div>
         <div className="flex items-center justify-center gap-3">
           <Button variant="secondary" onClick={()=>inputRef.current?.click()}>Choose File</Button>
           <a
-            className="text-sm text-brand-700 hover:underline"
+            className="text-sm text-[rgb(var(--accent))] hover:underline"
             href={URL.createObjectURL(new Blob(["email\nfounder@example.com\nhello@company.com\n"], { type: 'text/csv' }))}
             download="leads-template.csv"
           >Download template</a>

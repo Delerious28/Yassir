@@ -11,35 +11,33 @@ export default function SendPage() {
   const logSend = useStore(s => s.logSend)
 
   return (
-    <div className="grid gap-5">
-      <Card className="bg-gradient-to-r from-[rgba(var(--accent),0.1)] to-[rgba(var(--accent2),0.08)]">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-[rgba(var(--fg),0.6)]">Send center</p>
-            <h1 className="text-2xl font-bold tracking-tight">Control outbound pushes</h1>
-            <p className="text-[rgba(var(--fg),0.75)] mt-1">Open any campaign’s send tab for granular control or trigger force sends here.</p>
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-semibold">{leads.length}</div>
-            <div className="text-sm text-[rgba(var(--fg),0.7)]">lead pool available</div>
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-[rgb(var(--muted))] uppercase tracking-wide">Send</p>
+          <h1 className="text-3xl font-bold text-[rgb(var(--fg))]">Control outbound pushes</h1>
+          <p className="text-sm text-[rgb(var(--muted))]">Flat, clear controls for opening send tabs or forcing one-off sends.</p>
         </div>
-      </Card>
+        <div className="text-right">
+          <div className="text-3xl font-semibold">{leads.length}</div>
+          <div className="text-sm text-[rgb(var(--muted))]">lead pool available</div>
+        </div>
+      </div>
 
-      <div className="grid gap-3">
+      <div className="space-y-3">
         {campaigns.length === 0 && (
-          <Card>No campaigns yet. <Link className="text-[rgba(var(--accent),0.9)] underline" to="/campaigns/new">Create one</Link>.</Card>
+          <Card>No campaigns yet. <Link className="text-[rgb(var(--accent))] underline" to="/campaigns/new">Create one</Link>.</Card>
         )}
         {campaigns.map(c => {
           return (
-            <Card key={c.id} className="border-[rgba(var(--border),0.85)]">
+            <Card key={c.id}>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div className="space-y-1">
                   <div className="font-semibold text-lg">{c.name}</div>
-                  <div className="text-sm text-[rgba(var(--fg),0.65)]">{leads.length} total leads available</div>
+                  <div className="text-sm text-[rgb(var(--muted))]">{leads.length} total leads available</div>
                   <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="px-2 py-1 rounded-full bg-[rgba(var(--accent),0.12)]">Mail 1: {c.step1.subject || 'Subject TBD'}</span>
-                    <span className="px-2 py-1 rounded-full bg-[rgba(var(--accent2),0.12)]">{c.step2 ? `Mail 2 after ${c.step2DelayDays ?? 0}d` : 'Single step'}</span>
+                    <span className="px-2 py-1 rounded-full bg-[rgba(var(--accent),0.1)]">Mail 1: {c.step1.subject || 'Subject TBD'}</span>
+                    <span className="px-2 py-1 rounded-full bg-[rgba(var(--fg),0.06)]">{c.step2 ? `Mail 2 after ${c.step2DelayDays ?? 0}d` : 'Single step'}</span>
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
@@ -56,11 +54,6 @@ export default function SendPage() {
                           const now = new Date().toISOString()
                           logSend({ to: lead.email, time: now, campaignId: c.id, step: 1 })
                         } catch (e) {
-                          console.error('Send failed:', e)
-                          if (e instanceof Error && e.message.includes('Authentication')) {
-                            alert(e.message + ' Go to Settings → Authentication to re-authenticate.')
-                            return
-                          }
                           const now = new Date().toISOString()
                           logSend({ to: lead.email, time: now, campaignId: c.id, step: 1 })
                         }
@@ -78,11 +71,6 @@ export default function SendPage() {
                           const now = new Date().toISOString()
                           logSend({ to: lead.email, time: now, campaignId: c.id, step: 2 })
                         } catch (e) {
-                          console.error('Send failed:', e)
-                          if (e instanceof Error && e.message.includes('Authentication')) {
-                            alert(e.message + ' Go to Settings → Authentication to re-authenticate.')
-                            return
-                          }
                           const now = new Date().toISOString()
                           logSend({ to: lead.email, time: now, campaignId: c.id, step: 2 })
                         }

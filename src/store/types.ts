@@ -31,7 +31,7 @@ export type Settings = {
   appLogoUrl?: string
 }
 
-export type UiTheme = 'light' | 'dark' | 'aurora'
+export type UiTheme = 'light' | 'dark'
 
 export type ConnectionStatus = 'disconnected' | 'connected' | 'mock'
 

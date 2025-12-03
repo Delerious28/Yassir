@@ -15,7 +15,7 @@ const SendPage = lazy(() => import('./pages/Send'))
 export default function App() {
   return (
     <Layout>
-      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="text-lg" style={{ color: 'rgb(var(--fg-muted))' }}>Loading...</div></div>}>
+      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="text-lg" style={{ color: 'rgb(var(--muted))' }}>Loading...</div></div>}>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
