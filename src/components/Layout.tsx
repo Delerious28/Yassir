@@ -4,7 +4,7 @@ import { ReactNode } from 'react'
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen flex bg-gray-50 text-gray-900">
+    <div className="min-h-screen flex page-shell text-[rgb(var(--fg))]">
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <Topbar />
