@@ -338,7 +338,6 @@ export default function Settings() {
             <div className="text-xs px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgba(var(--fg),0.04)] text-[rgb(var(--muted))]">
               💡 Click a theme to preview instantly. Saving applies it everywhere.
             </div>
-          </div>
 
           <div className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card-bg))] p-6 space-y-3">
             <div className="flex items-center gap-3">
