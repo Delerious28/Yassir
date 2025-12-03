@@ -48,6 +48,20 @@ html, body, #root {
   --card-bg: 24 29 41;
   --border: 60 67 83;
   --accent: 99 179 237;   /* soft teal-blue */
+
+html[class^="theme-"] body {
+  background: rgb(var(--bg));
+  color: rgb(var(--fg));
+}
+
+body {
+  background: radial-gradient(circle at 20% 20%, rgba(var(--accent), 0.08), transparent 25%),
+              radial-gradient(circle at 80% 0%, rgba(var(--accent2), 0.06), transparent 20%),
+              rgb(var(--bg));
+}
+
+.page-shell {
+  position: relative;
 }
 
 /* ================================================
@@ -55,13 +69,17 @@ html, body, #root {
    (soft blue mist, frosted light layers)
 }
 
-/* ================================================
-   BASE THEME APPLICATION
-================================================ */
+.page-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(var(--accent), 0.05), rgba(var(--accent2), 0.05));
+  opacity: 0.5;
+  pointer-events: none;
+}
 
-html[class^="theme-"] body {
-  background: rgb(var(--bg));
-  color: rgb(var(--fg));
+.page-shell > * {
+  position: relative;
 }
 
 body {
@@ -104,7 +122,6 @@ body {
 
 /* ================================================
    CARD GLASS EFFECT FOR AURORA THEME
-================================================ */
 html.theme-aurora .card,
 html.theme-aurora .border,
 html.theme-aurora .border-r,
@@ -117,7 +134,6 @@ html.theme-aurora .border-b {
 
 /* ================================================
    INPUTS / BUTTONS / UI ELEMENTS
-================================================ */
 
 html.theme-aurora input,
 html.theme-aurora textarea,
@@ -147,7 +163,6 @@ html.theme-aurora button:hover {
 
 /* ================================================
    TEXT COLORS
-================================================ */
 
 html.theme-aurora h1,
 html.theme-aurora h2,
@@ -169,7 +184,6 @@ html.theme-aurora .text-muted {
 /* ============================================================
    AURORA THEME — ANIMATED NEON EFFECTS
    (Slow breathing glow around all core UI elements)
-============================================================ */
 
 @keyframes cyber-glow {
   0% {
@@ -188,7 +202,6 @@ html.theme-aurora .text-muted {
 
 /* ================================================
    Animated cards
-================================================ */
 
 html.theme-aurora .card,
 html.theme-aurora .border,
@@ -198,7 +211,6 @@ html.theme-aurora .rounded-lg {
 
 /* ================================================
    Animated buttons
-================================================ */
 
 html.theme-aurora button {
   animation: cyber-glow 5s ease-in-out infinite;
@@ -206,7 +218,6 @@ html.theme-aurora button {
 
 /* ================================================
    Animated focus outline for inputs
-================================================ */
 
 html.theme-aurora input:focus,
 html.theme-aurora textarea:focus,
@@ -217,7 +228,6 @@ html.theme-aurora select:focus {
 
 /* ================================================
    Accent animated underline for links
-================================================ */
 
 html.theme-aurora a:hover {
   text-shadow: 0 0 12px rgba(255, 46, 129, 0.8),
@@ -249,7 +259,6 @@ html.theme-dark .hover\:bg-gray-100:hover {
 
 /* ================================================
    AURORA THEME BODY & ROOT
-================================================ */
 
 html.theme-aurora,
 html.theme-aurora body,

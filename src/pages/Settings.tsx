@@ -26,7 +26,12 @@ export default function Settings() {
   /* Apply preview theme in real-time */
   useEffect(() => {
     const html = document.documentElement
-    html.className = `theme-${previewTheme || theme}`
+    html.classList.remove('theme-light', 'theme-dark')
+    html.classList.add(`theme-${previewTheme || theme}`)
+    return () => {
+      html.classList.remove('theme-light', 'theme-dark')
+      html.classList.add(`theme-${theme}`)
+    }
   }, [previewTheme, theme])
 
   useEffect(() => {

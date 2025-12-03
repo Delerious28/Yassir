@@ -65,13 +65,19 @@ function saveState(state: State) {
   }
 }
 
+function applyTheme(theme: UiTheme) {
+  const root = document.documentElement
+  root.classList.remove('theme-light', 'theme-dark')
+  root.classList.add(theme === 'dark' ? 'theme-dark' : 'theme-light')
+}
+
 export const useStore = create<State & Actions>((set, get) => {
   const loadedState = loadState()
   if ((loadedState as any).uiTheme === 'cyber') {
     (loadedState as any).uiTheme = 'aurora'
   }
   const initialState = { ...initial, ...loadedState }
-  
+
   // Apply theme immediately on load
   if (typeof document !== 'undefined') {
     const root = document.documentElement
@@ -81,45 +87,46 @@ export const useStore = create<State & Actions>((set, get) => {
   }
   
   return {
-  ...initialState,
-  setConnection: (status) => set({ connection: status }),
-  addLeads: (items) => set((s) => {
-    const newLeads = items.map(l => ({ ...l, id: nanoid() }))
-    const newLeadIds = newLeads.map(l => l.id)
-    // Auto-attach new leads to all existing campaigns
-    const updatedCampaigns = s.campaigns.map(c => ({
-      ...c,
-      leadIds: Array.from(new Set([...c.leadIds, ...newLeadIds]))
-    }))
-    return { leads: [...s.leads, ...newLeads], campaigns: updatedCampaigns }
-  }),
-  removeLead: (id) => set((s) => ({ leads: s.leads.filter(l => l.id !== id) })),
-  addCampaign: (c) => {
-    const id = nanoid()
-    const campaign: Campaign = {
-      id,
-      name: c.name,
-      step1: c.step1,
-      step2: c.step2,
-      step2DelayDays: c.step2DelayDays,
-      leadIds: c.leadIds ?? [],
-    }
-    set((s) => ({ campaigns: [campaign, ...s.campaigns] }))
-    return id
-  },
-  updateCampaign: (id, patch) => set((s) => ({
-    campaigns: s.campaigns.map(c => c.id === id ? { ...c, ...patch } : c)
-  })),
-  attachLeadsToCampaign: (campaignId, leadIds) => set((s) => ({
-    campaigns: s.campaigns.map(c => c.id === campaignId ? { ...c, leadIds: Array.from(new Set([...(c.leadIds||[]), ...leadIds])) } : c)
-  })),
-  clearCampaignLeads: (campaignId) => set((s) => ({
-    campaigns: s.campaigns.map(c => c.id === campaignId ? { ...c, leadIds: [] } : c)
-  })),
-  logSend: (entry) => set((s) => ({ logs: [{ ...entry, id: nanoid() }, ...s.logs] })),
-  setSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
-  setUiTheme: (t) => set(() => ({ uiTheme: t })),
-}})
+    ...initialState,
+    setConnection: (status) => set({ connection: status }),
+    addLeads: (items) => set((s) => {
+      const newLeads = items.map(l => ({ ...l, id: nanoid() }))
+      const newLeadIds = newLeads.map(l => l.id)
+      // Auto-attach new leads to all existing campaigns
+      const updatedCampaigns = s.campaigns.map(c => ({
+        ...c,
+        leadIds: Array.from(new Set([...c.leadIds, ...newLeadIds]))
+      }))
+      return { leads: [...s.leads, ...newLeads], campaigns: updatedCampaigns }
+    }),
+    removeLead: (id) => set((s) => ({ leads: s.leads.filter(l => l.id !== id) })),
+    addCampaign: (c) => {
+      const id = nanoid()
+      const campaign: Campaign = {
+        id,
+        name: c.name,
+        step1: c.step1,
+        step2: c.step2,
+        step2DelayDays: c.step2DelayDays,
+        leadIds: c.leadIds ?? [],
+      }
+      set((s) => ({ campaigns: [campaign, ...s.campaigns] }))
+      return id
+    },
+    updateCampaign: (id, patch) => set((s) => ({
+      campaigns: s.campaigns.map(c => c.id === id ? { ...c, ...patch } : c)
+    })),
+    attachLeadsToCampaign: (campaignId, leadIds) => set((s) => ({
+      campaigns: s.campaigns.map(c => c.id === campaignId ? { ...c, leadIds: Array.from(new Set([...(c.leadIds||[]), ...leadIds])) } : c)
+    })),
+    clearCampaignLeads: (campaignId) => set((s) => ({
+      campaigns: s.campaigns.map(c => c.id === campaignId ? { ...c, leadIds: [] } : c)
+    })),
+    logSend: (entry) => set((s) => ({ logs: [{ ...entry, id: nanoid() }, ...s.logs] })),
+    setSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
+    setUiTheme: (t) => set(() => ({ uiTheme: t })),
+  }
+})
 
 // Persist on any change
 try {

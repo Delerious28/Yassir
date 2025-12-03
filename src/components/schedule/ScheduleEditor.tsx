@@ -38,7 +38,7 @@ export default function ScheduleEditor() {
         </div>
       </Card>
       <Card title="Preview (next 10)">
-        <ul className="space-y-1">
+        <ul className="space-y-2">
           {sampleTimes.map((t, i) => (
             <li
               key={i}
