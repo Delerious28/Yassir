@@ -37,7 +37,6 @@ html, body, #root {
   --card-bg: 255 255 255;
   --border: 223 228 235;
   --accent: 54 109 245;   /* breezy blue */
-  --accent2: 104 201 255;
 }
 
 /* ================================================
@@ -49,16 +48,38 @@ html, body, #root {
   --card-bg: 24 29 41;
   --border: 60 67 83;
   --accent: 99 179 237;   /* soft teal-blue */
-  --accent2: 140 224 255;
-}
-
-/* ================================================
-   BASE THEME APPLICATION
-================================================ */
 
 html[class^="theme-"] body {
   background: rgb(var(--bg));
   color: rgb(var(--fg));
+}
+
+body {
+  background: radial-gradient(circle at 20% 20%, rgba(var(--accent), 0.08), transparent 25%),
+              radial-gradient(circle at 80% 0%, rgba(var(--accent2), 0.06), transparent 20%),
+              rgb(var(--bg));
+}
+
+.page-shell {
+  position: relative;
+}
+
+/* ================================================
+   AURORA THEME — Liquid glass inspired by macOS
+   (soft blue mist, frosted light layers)
+}
+
+.page-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(var(--accent), 0.05), rgba(var(--accent2), 0.05));
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.page-shell > * {
+  position: relative;
 }
 
 body {
@@ -100,6 +121,120 @@ body {
 }
 
 /* ================================================
+   CARD GLASS EFFECT FOR AURORA THEME
+html.theme-aurora .card,
+html.theme-aurora .border,
+html.theme-aurora .border-r,
+html.theme-aurora .border-b {
+  background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08)) !important;
+  backdrop-filter: blur(18px) saturate(130%);
+  border-color: var(--glass-border) !important;
+  box-shadow: 0 12px 40px rgba(3,11,28,0.45), inset 0 1px 0 rgba(255,255,255,0.18), 0 0 16px var(--glass-glow);
+}
+
+/* ================================================
+   INPUTS / BUTTONS / UI ELEMENTS
+
+html.theme-aurora input,
+html.theme-aurora textarea,
+html.theme-aurora select {
+  background-color: rgba(255,255,255,0.14) !important;
+  border-color: var(--glass-border) !important;
+  color: rgb(var(--fg)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+}
+
+html.theme-aurora input::placeholder {
+  color: rgba(200,225,255,0.65) !important;
+}
+
+html.theme-aurora button {
+  border-color: var(--glass-border) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(185,225,255,0.18)) !important;
+  color: rgb(var(--fg)) !important;
+  box-shadow: 0 10px 32px rgba(0,0,0,0.25), 0 0 20px rgba(128,190,255,0.35);
+}
+
+html.theme-aurora button:hover {
+  background: linear-gradient(135deg, rgba(185,225,255,0.2), rgba(255,255,255,0.26)) !important;
+  border-color: rgba(255,255,255,0.4) !important;
+  box-shadow: 0 0 26px rgba(128,190,255,0.5);
+}
+
+/* ================================================
+   TEXT COLORS
+
+html.theme-aurora h1,
+html.theme-aurora h2,
+html.theme-aurora h3,
+html.theme-aurora .font-semibold,
+html.theme-aurora .font-medium {
+  text-shadow: 0 6px 26px rgba(0,34,78,0.55);
+}
+
+html.theme-aurora a {
+  color: rgb(var(--accent));
+  text-shadow: 0 6px 18px rgba(0,34,78,0.5);
+}
+
+html.theme-aurora .text-muted {
+  color: rgba(220,220,255,0.5) !important;
+}
+
+/* ============================================================
+   AURORA THEME — ANIMATED NEON EFFECTS
+   (Slow breathing glow around all core UI elements)
+
+@keyframes cyber-glow {
+  0% {
+    box-shadow: 0 0 6px rgba(102, 255, 204, 0.35), 0 0 12px rgba(102, 255, 204, 0.2);
+    border-color: rgba(102, 255, 204, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(255, 140, 199, 0.55), 0 0 28px rgba(255, 140, 199, 0.32);
+    border-color: rgba(255, 140, 199, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 6px rgba(102, 255, 204, 0.35), 0 0 12px rgba(102, 255, 204, 0.2);
+    border-color: rgba(102, 255, 204, 0.25);
+  }
+}
+
+/* ================================================
+   Animated cards
+
+html.theme-aurora .card,
+html.theme-aurora .border,
+html.theme-aurora .rounded-lg {
+  animation: cyber-glow 6s ease-in-out infinite;
+}
+
+/* ================================================
+   Animated buttons
+
+html.theme-aurora button {
+  animation: cyber-glow 5s ease-in-out infinite;
+}
+
+/* ================================================
+   Animated focus outline for inputs
+
+html.theme-aurora input:focus,
+html.theme-aurora textarea:focus,
+html.theme-aurora select:focus {
+  outline: none !important;
+  animation: cyber-glow 2.2s ease-in-out infinite;
+}
+
+/* ================================================
+   Accent animated underline for links
+
+html.theme-aurora a:hover {
+  text-shadow: 0 0 12px rgba(255, 46, 129, 0.8),
+               0 0 20px rgba(0, 246, 255, 0.7);
+}
+
+/* ================================================
    DARK THEME STYLES
 ================================================ */
 
@@ -120,6 +255,24 @@ html.theme-dark .border-b {
 
 html.theme-dark .hover\:bg-gray-100:hover { 
   background-color: rgb(55 65 81) !important;
+}
+
+/* ================================================
+   AURORA THEME BODY & ROOT
+
+html.theme-aurora,
+html.theme-aurora body,
+html.theme-aurora #root {
+  background-color: rgb(var(--bg)) !important;
+  color: rgb(var(--fg)) !important;
+}
+
+html.theme-aurora aside,
+html.theme-aurora .border-r,
+html.theme-aurora .border-b {
+  background-color: rgb(var(--card-bg)) !important;
+  color: rgb(var(--fg)) !important;
+  border-color: rgba(0,246,255,0.4) !important;
 }
 
 /* Icon image overlay - hide emoji when image loads */

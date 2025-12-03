@@ -42,15 +42,10 @@ export default function ScheduleEditor() {
           {sampleTimes.map((t, i) => (
             <li
               key={i}
-              className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
-              style={{
-                color: 'rgb(var(--fg))',
-                backgroundColor: 'rgba(var(--fg),0.05)',
-                borderColor: 'rgba(var(--fg),0.12)',
-              }}
+              className="text-sm"
+              style={{ color: 'rgba(var(--fg),0.9)' }}
             >
-              <span className="font-semibold">{t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-              <span className="text-[rgba(var(--fg),0.75)]">Scheduled send</span>
+              {t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </li>
           ))}
         </ul>

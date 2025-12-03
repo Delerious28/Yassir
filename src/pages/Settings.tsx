@@ -38,6 +38,11 @@ export default function Settings() {
     setLocalSettings(settings)
   }, [settings])
 
+  useEffect(() => () => {
+    // reset theme if user leaves preview on
+    document.documentElement.className = `theme-${theme}`
+  }, [])
+
   const resetAll = () => {
     localStorage.removeItem("outreach-state")
     location.reload()
@@ -165,6 +170,13 @@ export default function Settings() {
       icon: '🌙',
       description: 'Matte charcoal with teal highlights',
       accentClass: 'from-cyan-400/15 via-cyan-500/10 to-transparent'
+    },
+    {
+      id: 'aurora',
+      label: 'Aurora',
+      icon: '✨',
+      description: 'Glassmorphic mint & orchid neon',
+      accentClass: 'from-emerald-400/20 via-pink-400/10 to-transparent'
     }
   ]), [])
 
