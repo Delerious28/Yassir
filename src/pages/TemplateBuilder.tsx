@@ -11,6 +11,14 @@ const blockPalette: { label: string; type: EmailBlock['type']; description: stri
   { label: 'Button', type: 'button', description: 'Primary calls to action', icon: Upload },
 ]
 
+const fontOptions = [
+  'Inter, system-ui, sans-serif',
+  'Georgia, serif',
+  '"Times New Roman", serif',
+  '"Helvetica Neue", Arial, sans-serif',
+  '"Courier New", monospace',
+]
+
 export default function TemplateBuilder() {
   const template = useStore(s => s.settings.defaultEmailTemplate)
   const brandLogo = useStore(s => s.settings.brandLogoUrl)
@@ -28,13 +36,37 @@ export default function TemplateBuilder() {
     const starter: EmailBlock = {
       id: nanoid(),
       type,
-      content: type === 'image' ? 'https://placehold.co/600x200' : type === 'button' ? 'Call to action' : 'Write your email copy here.',
+      content: type === 'image' ? '' : type === 'button' ? 'Call to action' : 'Write your email copy here.',
       align: 'left',
       padding: '12px',
       background: type === 'button' ? brandColor : undefined,
       textColor: type === 'button' ? '#FFFFFF' : undefined,
+      fontFamily: type === 'text' ? 'Inter, system-ui, sans-serif' : undefined,
+      fontSize: type === 'text' ? '16px' : undefined,
+      buttonUrl: type === 'button' ? 'https://example.com' : undefined,
     }
     setLocalBlocks(b => [...b, starter])
+  }
+
+  function readImageFile(file: File, onDone: (dataUrl: string) => void) {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result === 'string') {
+        onDone(result)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function handleBlockImageUpload(blockId: string, file?: File | null) {
+    if (!file) return
+    readImageFile(file, dataUrl => updateBlock(blockId, { content: dataUrl }))
+  }
+
+  function handleLogoUpload(file?: File | null) {
+    if (!file) return
+    readImageFile(file, dataUrl => setLogo(dataUrl))
   }
 
   function move(id: string, dir: -1 | 1) {
@@ -82,7 +114,7 @@ export default function TemplateBuilder() {
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
       <div className="xl:col-span-2 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -105,25 +137,33 @@ export default function TemplateBuilder() {
             </div>
           </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-            <label className="text-sm font-medium text-[rgb(var(--muted))]">Brand logo URL</label>
-            <input value={logo} onChange={e => setLogo(e.target.value)} placeholder="https://..." className="flex-1 rounded-lg border border-[rgb(var(--border))] bg-transparent px-3 py-2 text-sm" />
+            <label className="text-sm font-medium text-[rgb(var(--muted))]">Brand logo</label>
+            <div className="flex flex-1 flex-col gap-2 md:flex-row md:items-center">
+              <input type="file" accept="image/*" onChange={e => handleLogoUpload(e.target.files?.[0])} className="text-sm" />
+              {logo && (
+                <div className="flex items-center gap-2">
+                  <img src={logo} alt="Brand logo preview" className="h-10 w-10 rounded border border-[rgb(var(--border))] object-contain" />
+                  <button onClick={() => setLogo('')} className="text-xs px-3 py-2 rounded-lg border border-[rgb(var(--border))] hover:bg-[rgba(var(--fg),0.04)]">Remove</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {blockPalette.map(({ label, type, description, icon: Icon }) => (
-            <button key={type} onClick={() => addBlock(type)} className="p-4 rounded-xl border border-[rgb(var(--border))] text-left bg-[rgb(var(--card-bg))] hover:border-[rgb(var(--accent))] transition">
+            <button key={type} onClick={() => addBlock(type)} className="p-3 rounded-lg border border-[rgb(var(--border))] text-left bg-[rgb(var(--card-bg))] hover:border-[rgb(var(--accent))] transition">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))]"><Icon size={18} /></div>
-                <span className="font-semibold text-sm">{label}</span>
+                <div className="p-2 rounded-lg bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))]"><Icon size={16} /></div>
+                <span className="font-semibold text-xs">{label}</span>
               </div>
               <p className="text-xs text-[rgb(var(--muted))] leading-relaxed">{description}</p>
             </button>
           ))}
-          <button onClick={addAttachment} className="p-4 rounded-xl border border-[rgb(var(--border))] text-left bg-[rgb(var(--card-bg))] hover:border-[rgb(var(--accent))] transition">
+          <button onClick={addAttachment} className="p-3 rounded-lg border border-[rgb(var(--border))] text-left bg-[rgb(var(--card-bg))] hover:border-[rgb(var(--accent))] transition">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))]"><Paperclip size={18} /></div>
-              <span className="font-semibold text-sm">Attachment</span>
+              <div className="p-2 rounded-lg bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))]"><Paperclip size={16} /></div>
+              <span className="font-semibold text-xs">Attachment</span>
             </div>
             <p className="text-xs text-[rgb(var(--muted))] leading-relaxed">Collect files to append at the bottom of the email.</p>
           </button>
@@ -151,11 +191,24 @@ export default function TemplateBuilder() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <label className="text-xs text-[rgb(var(--muted))]">Content</label>
+                  <label className="text-xs text-[rgb(var(--muted))]">{block.type === 'button' ? 'Button label' : block.type === 'image' ? 'Image source (optional URL)' : 'Content'}</label>
                   {block.type === 'text' ? (
                     <textarea value={block.content} onChange={e => updateBlock(block.id, { content: e.target.value })} className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent p-2 text-sm" rows={3} />
                   ) : (
                     <input value={block.content} onChange={e => updateBlock(block.id, { content: e.target.value })} className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-3 py-2 text-sm" />
+                  )}
+                  {block.type === 'image' && (
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs text-[rgb(var(--muted))]">Upload image</label>
+                      <input type="file" accept="image/*" onChange={e => handleBlockImageUpload(block.id, e.target.files?.[0])} className="text-sm" />
+                      {block.content && <img src={block.content} alt="Uploaded block" className="h-24 w-full rounded-lg object-cover border border-[rgb(var(--border))]" />}
+                    </div>
+                  )}
+                  {block.type === 'button' && (
+                    <div className="space-y-1">
+                      <label className="text-xs text-[rgb(var(--muted))]">Button link</label>
+                      <input value={block.buttonUrl || ''} onChange={e => updateBlock(block.id, { buttonUrl: e.target.value })} placeholder="https://destination.com" className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-3 py-2 text-sm" />
+                    </div>
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -179,6 +232,22 @@ export default function TemplateBuilder() {
                     <label className="text-xs text-[rgb(var(--muted))]">Text color</label>
                     <input value={block.textColor || ''} onChange={e => updateBlock(block.id, { textColor: e.target.value })} placeholder="#1f2937" className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-2 py-2 text-sm" />
                   </div>
+                  {block.type === 'text' && (
+                    <>
+                      <div className="space-y-1 col-span-2">
+                        <label className="text-xs text-[rgb(var(--muted))]">Font family</label>
+                        <select value={block.fontFamily || fontOptions[0]} onChange={e => updateBlock(block.id, { fontFamily: e.target.value })} className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-2 py-2 text-sm">
+                          {fontOptions.map(font => (
+                            <option key={font} value={font}>{font}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs text-[rgb(var(--muted))]">Font size</label>
+                        <input value={block.fontSize || '16px'} onChange={e => updateBlock(block.id, { fontSize: e.target.value })} placeholder="16px" className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent px-2 py-2 text-sm" />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -199,7 +268,7 @@ export default function TemplateBuilder() {
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 xl:col-span-2">
         <div className="p-4 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card-bg))] flex items-center justify-between">
           <div>
             <h2 className="font-semibold text-sm">Live preview</h2>
@@ -210,18 +279,18 @@ export default function TemplateBuilder() {
             <span>{brandColor}</span>
           </div>
         </div>
-        <div className="rounded-xl border border-[rgb(var(--border))] bg-white text-black overflow-hidden">
-          <div className="bg-gray-100 px-4 py-3 flex items-center gap-3">
-            {logo && <img src={logo} alt="Brand logo" className="h-8 w-8 object-contain" />}
+        <div className="rounded-2xl border border-[rgb(var(--border))] bg-white text-black overflow-hidden shadow-lg">
+          <div className="bg-gray-100 px-6 py-4 flex items-center gap-3">
+            {logo && <img src={logo} alt="Brand logo" className="h-10 w-10 object-contain" />}
             <div>
               <p className="text-xs text-gray-500">Template</p>
-              <p className="font-semibold text-gray-800">{name}</p>
+              <p className="font-semibold text-gray-800 text-lg leading-tight">{name}</p>
             </div>
           </div>
-          <div className="p-4">
-            <div className="space-y-3" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+          <div className="p-6">
+            <div className="space-y-4 text-base" dangerouslySetInnerHTML={{ __html: previewHtml }} />
             {localAttachments.length > 0 && (
-              <div className="mt-4 border-t pt-3 text-sm">
+              <div className="mt-5 border-t pt-4 text-sm">
                 <p className="font-semibold mb-2">Attachments</p>
                 <ul className="list-disc ml-4 space-y-1">
                   {localAttachments.map(att => (
@@ -245,16 +314,22 @@ function renderPreview(blocks: EmailBlock[], brandColor: string, attachments?: T
     const textColor = block.textColor || ''
 
     if (block.type === 'image') {
+      if (!block.content) {
+        return `<div style="padding:${padding};text-align:${align};${background ? `background:${background};` : ''}"><div style="border:1px dashed #d1d5db;border-radius:12px;padding:24px;color:#6b7280;font-size:14px;">Upload an image to show it here.</div></div>`
+      }
       return `<div style="padding:${padding};text-align:${align};${background ? `background:${background};` : ''}"><img src="${block.content}" alt="" style="max-width:100%;border-radius:12px" /></div>`
     }
 
     if (block.type === 'button') {
       const bg = block.background || brandColor
       const fg = block.textColor || '#ffffff'
-      return `<div style="padding:${padding};text-align:${align};${background ? `background:${background};` : ''}"><a href="#" style="display:inline-block;background:${bg};color:${fg};padding:12px 18px;border-radius:12px;font-weight:600;text-decoration:none">${block.content}</a></div>`
+      const url = block.buttonUrl || '#'
+      return `<div style="padding:${padding};text-align:${align};${background ? `background:${background};` : ''}"><a href="${url}" style="display:inline-block;background:${bg};color:${fg};padding:12px 18px;border-radius:12px;font-weight:600;text-decoration:none">${block.content}</a></div>`
     }
 
-    return `<div style="padding:${padding};text-align:${align};${background ? `background:${background};` : ''};${textColor ? `color:${textColor};` : ''}"><p style="margin:0;line-height:1.5">${block.content}</p></div>`
+    const fontFamily = block.fontFamily || 'Inter, system-ui, sans-serif'
+    const fontSize = block.fontSize || '16px'
+    return `<div style="padding:${padding};text-align:${align};${background ? `background:${background};` : ''};${textColor ? `color:${textColor};` : ''}"><p style="margin:0;line-height:1.5;font-family:${fontFamily};font-size:${fontSize};">${block.content}</p></div>`
   })
 
   if (attachments && attachments.length > 0) {

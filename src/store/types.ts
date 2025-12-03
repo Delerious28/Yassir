@@ -48,6 +48,9 @@ export type EmailBlock = {
   background?: string
   textColor?: string
   padding?: string
+  fontFamily?: string
+  fontSize?: string
+  buttonUrl?: string
 }
 
 export type TemplateAttachment = {

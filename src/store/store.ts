@@ -58,7 +58,8 @@ function createDefaultTemplate(): EmailTemplate {
         align: 'center',
         padding: '8px 12px 16px',
         background: '#2563EB',
-        textColor: '#FFFFFF'
+        textColor: '#FFFFFF',
+        buttonUrl: 'https://example.com'
       },
       {
         id: nanoid(),
