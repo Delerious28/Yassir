@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { nanoid } from '../utils/nanoid'
-import type { Campaign, ConnectionStatus, Lead, LogEntry, Settings, UiTheme, UUID } from './types'
+import type { Campaign, ConnectionStatus, EmailTemplate, Lead, LogEntry, Settings, UiTheme, UUID } from './types'
 
 type State = {
   leads: Lead[]
@@ -34,8 +34,43 @@ const initial: State = {
     windowEnd: '17:00',
     intervalMinMins: 3,
     intervalMaxMins: 6,
+    defaultEmailTemplate: createDefaultTemplate(),
   },
   uiTheme: 'light',
+}
+
+function createDefaultTemplate(): EmailTemplate {
+  return {
+    name: 'Brand Default',
+    brandColor: '#2563EB',
+    blocks: [
+      {
+        id: nanoid(),
+        type: 'text',
+        content: 'Introduce your brand with a short welcome message.',
+        align: 'left',
+        padding: '16px 12px 8px',
+      },
+      {
+        id: nanoid(),
+        type: 'button',
+        content: 'Call to action',
+        align: 'center',
+        padding: '8px 12px 16px',
+        background: '#2563EB',
+        textColor: '#FFFFFF',
+        buttonUrl: 'https://example.com'
+      },
+      {
+        id: nanoid(),
+        type: 'text',
+        content: 'Add follow-up details and contact information here.',
+        align: 'left',
+        padding: '12px',
+      }
+    ],
+    attachments: [],
+  }
 }
 
 function loadState(): Partial<State> {

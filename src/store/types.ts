@@ -29,6 +29,34 @@ export type Settings = {
   mail_from?: string
   appName?: string
   appLogoUrl?: string
+  brandLogoUrl?: string
+  defaultEmailTemplate?: EmailTemplate
+}
+
+export type EmailTemplate = {
+  name: string
+  brandColor?: string
+  blocks: EmailBlock[]
+  attachments?: TemplateAttachment[]
+}
+
+export type EmailBlock = {
+  id: UUID
+  type: 'text' | 'image' | 'button'
+  content: string
+  align?: 'left' | 'center' | 'right'
+  background?: string
+  textColor?: string
+  padding?: string
+  fontFamily?: string
+  fontSize?: string
+  buttonUrl?: string
+}
+
+export type TemplateAttachment = {
+  id: UUID
+  label: string
+  url?: string
 }
 
 export type UiTheme = 'light' | 'dark'
