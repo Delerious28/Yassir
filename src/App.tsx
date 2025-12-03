@@ -11,6 +11,7 @@ const Schedule = lazy(() => import('./pages/Schedule'))
 const Logs = lazy(() => import('./pages/Logs'))
 const Settings = lazy(() => import('./pages/Settings'))
 const SendPage = lazy(() => import('./pages/Send'))
+const TemplateBuilder = lazy(() => import('./pages/TemplateBuilder'))
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/logs" element={<Logs />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/templates" element={<TemplateBuilder />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Suspense>
