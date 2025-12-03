@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { Mail, LayoutDashboard, CalendarClock, ListChecks, Users, Settings as SettingsIcon, NotebookPen, Send } from 'lucide-react'
+import { Mail, LayoutDashboard, CalendarClock, ListChecks, Users, Settings as SettingsIcon, NotebookPen, Send, Palette } from 'lucide-react'
 import { useStore } from '../store/store'
 
 const nav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/campaigns', label: 'Campaigns', icon: NotebookPen },
   { to: '/send', label: 'Send', icon: Send },
+  { to: '/templates', label: 'Email designer', icon: Palette },
   { to: '/leads', label: 'Leads', icon: Users },
   { to: '/schedule', label: 'Schedule', icon: CalendarClock },
   { to: '/logs', label: 'Logs', icon: ListChecks },
@@ -15,7 +16,7 @@ const nav = [
 export default function Sidebar() {
   const settings = useStore(s => s.settings)
   const appName = settings.appName || 'Outreach'
-  const appLogoUrl = settings.appLogoUrl
+  const appLogoUrl = settings.brandLogoUrl || settings.appLogoUrl
 
   return (
     <aside className="w-64 hidden md:flex flex-col border-r border-[rgb(var(--border))] bg-[rgb(var(--card-bg))]">
