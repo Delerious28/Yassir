@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { MoveUp, MoveDown, Trash2, Palette, Image as ImageIcon, Type, Paperclip, Upload } from 'lucide-react'
 import Button from '../components/ui/Button'
 import { useStore } from '../store/store'
@@ -20,15 +20,38 @@ const fontOptions = [
 ]
 
 export default function TemplateBuilder() {
-  const template = useStore(s => s.settings.defaultEmailTemplate)
-  const brandLogo = useStore(s => s.settings.brandLogoUrl)
+  const settings = useStore(s => s.settings)
   const setSettings = useStore(s => s.setSettings)
 
-  const [localBlocks, setLocalBlocks] = useState<EmailBlock[]>(template?.blocks || [])
-  const [localAttachments, setLocalAttachments] = useState<TemplateAttachment[]>(template?.attachments || [])
-  const [name, setName] = useState(template?.name || 'Default template')
-  const [brandColor, setBrandColor] = useState(template?.brandColor || '#2563EB')
-  const [logo, setLogo] = useState(brandLogo || '')
+  const templates = settings.templates || []
+  const brandLogo = settings.brandLogoUrl || ''
+
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(settings.defaultTemplateId || templates[0]?.id || '')
+  const [localBlocks, setLocalBlocks] = useState<EmailBlock[]>(templates.find(t => t.id === selectedTemplateId)?.blocks || [])
+  const [localAttachments, setLocalAttachments] = useState<TemplateAttachment[]>(templates.find(t => t.id === selectedTemplateId)?.attachments || [])
+  const [name, setName] = useState(templates.find(t => t.id === selectedTemplateId)?.name || 'Default template')
+  const [brandColor, setBrandColor] = useState(templates.find(t => t.id === selectedTemplateId)?.brandColor || '#2563EB')
+  const [logo, setLogo] = useState(brandLogo)
+
+  useEffect(() => {
+    if (!templates.length) return
+    if (!selectedTemplateId || !templates.some(t => t.id === selectedTemplateId)) {
+      setSelectedTemplateId(settings.defaultTemplateId || templates[0].id)
+    }
+  }, [templates, selectedTemplateId, settings.defaultTemplateId])
+
+  useEffect(() => {
+    const active = templates.find(t => t.id === selectedTemplateId) || templates[0]
+    if (!active) return
+    setLocalBlocks(active.blocks || [])
+    setLocalAttachments(active.attachments || [])
+    setName(active.name || 'Untitled template')
+    setBrandColor(active.brandColor || '#2563EB')
+  }, [selectedTemplateId, templates])
+
+  useEffect(() => {
+    setLogo(brandLogo)
+  }, [brandLogo])
 
   const previewHtml = useMemo(() => renderPreview(localBlocks, brandColor, localAttachments), [localBlocks, brandColor, localAttachments])
 
@@ -101,27 +124,86 @@ export default function TemplateBuilder() {
     setLocalAttachments(a => a.filter(att => att.id !== id))
   }
 
-  function saveTemplate() {
+  function saveTemplate(markAsDefault = false) {
+    const ensuredId = selectedTemplateId || nanoid()
+    const updatedTemplate = {
+      id: ensuredId,
+      name: name || 'Untitled template',
+      brandColor,
+      blocks: localBlocks,
+      attachments: localAttachments,
+    }
+
+    const existing = templates.some(t => t.id === ensuredId)
+    const updatedTemplates = existing ? templates.map(t => t.id === ensuredId ? updatedTemplate : t) : [...templates, updatedTemplate]
+    const defaultId = markAsDefault ? ensuredId : (settings.defaultTemplateId || ensuredId)
+    const defaultTemplate = updatedTemplates.find(t => t.id === defaultId) || updatedTemplate
+
+    setSelectedTemplateId(ensuredId)
     setSettings({
-      defaultEmailTemplate: {
-        name,
-        brandColor,
-        blocks: localBlocks,
-        attachments: localAttachments,
-      },
+      templates: updatedTemplates,
+      defaultTemplateId: defaultId,
+      defaultEmailTemplate: defaultTemplate,
       brandLogoUrl: logo || undefined,
     })
   }
 
+  function addTemplate() {
+    const newTemplateId = nanoid()
+    const newTemplate = {
+      id: newTemplateId,
+      name: `Template ${templates.length + 1}`,
+      brandColor: '#2563EB',
+      blocks: [],
+      attachments: [],
+    }
+    setSettings({
+      templates: [...templates, newTemplate],
+    })
+    setSelectedTemplateId(newTemplateId)
+  }
+
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
-      <div className="xl:col-span-2 space-y-6">
+    <div className="grid grid-cols-1 2xl:grid-cols-5 gap-6 items-start">
+      <div className="2xl:col-span-3 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Design emails</h1>
             <p className="text-sm text-[rgb(var(--muted))]">Assemble text, images, buttons, and attachments for your outgoing emails.</p>
           </div>
-          <Button onClick={saveTemplate}>Save as default</Button>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => saveTemplate(true)}>Save & set default</Button>
+            <Button onClick={() => saveTemplate(false)}>Save template</Button>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card-bg))] space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Templates</h2>
+              <p className="text-sm text-[rgb(var(--muted))]">Click a template to load it. The default is used when sending.</p>
+            </div>
+            <Button className="text-sm" onClick={addTemplate}>New template</Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {templates.map(t => {
+              const isSelected = t.id === selectedTemplateId
+              const isDefault = settings.defaultTemplateId === t.id
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTemplateId(t.id)}
+                  className={`text-left p-3 rounded-lg border transition ${isSelected ? 'border-[rgb(var(--accent))] bg-[rgba(var(--accent),0.08)]' : 'border-[rgb(var(--border))] bg-[rgb(var(--card-bg))] hover:border-[rgb(var(--accent))]'}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-sm truncate">{t.name}</span>
+                    {isDefault && <span className="text-[10px] px-2 py-1 rounded-full bg-[rgba(var(--accent),0.15)] text-[rgb(var(--accent))]">Default</span>}
+                  </div>
+                  <p className="text-[11px] text-[rgb(var(--muted))] mt-1 truncate">{t.blocks.length} block{t.blocks.length === 1 ? '' : 's'}</p>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         <div className="p-4 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card-bg))] space-y-4">
@@ -150,22 +232,22 @@ export default function TemplateBuilder() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
           {blockPalette.map(({ label, type, description, icon: Icon }) => (
-            <button key={type} onClick={() => addBlock(type)} className="p-3 rounded-lg border border-[rgb(var(--border))] text-left bg-[rgb(var(--card-bg))] hover:border-[rgb(var(--accent))] transition">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))]"><Icon size={16} /></div>
-                <span className="font-semibold text-xs">{label}</span>
+            <button key={type} onClick={() => addBlock(type)} className="p-3 rounded-lg border border-[rgb(var(--border))] text-left bg-[rgb(var(--card-bg))] hover:border-[rgb(var(--accent))] transition text-xs">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="p-2 rounded-lg bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))]"><Icon size={14} /></div>
+                <span className="font-semibold">{label}</span>
               </div>
-              <p className="text-xs text-[rgb(var(--muted))] leading-relaxed">{description}</p>
+              <p className="text-[11px] text-[rgb(var(--muted))] leading-relaxed">{description}</p>
             </button>
           ))}
-          <button onClick={addAttachment} className="p-3 rounded-lg border border-[rgb(var(--border))] text-left bg-[rgb(var(--card-bg))] hover:border-[rgb(var(--accent))] transition">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))]"><Paperclip size={16} /></div>
-              <span className="font-semibold text-xs">Attachment</span>
+          <button onClick={addAttachment} className="p-3 rounded-lg border border-[rgb(var(--border))] text-left bg-[rgb(var(--card-bg))] hover:border-[rgb(var(--accent))] transition text-xs">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="p-2 rounded-lg bg-[rgba(var(--accent),0.1)] text-[rgb(var(--accent))]"><Paperclip size={14} /></div>
+              <span className="font-semibold">Attachment</span>
             </div>
-            <p className="text-xs text-[rgb(var(--muted))] leading-relaxed">Collect files to append at the bottom of the email.</p>
+            <p className="text-[11px] text-[rgb(var(--muted))] leading-relaxed">Collect files to append at the bottom of the email.</p>
           </button>
         </div>
 
@@ -191,7 +273,7 @@ export default function TemplateBuilder() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <label className="text-xs text-[rgb(var(--muted))]">{block.type === 'button' ? 'Button label' : block.type === 'image' ? 'Image source (optional URL)' : 'Content'}</label>
+                  <label className="text-xs text-[rgb(var(--muted))]">{block.type === 'button' ? 'Button label' : block.type === 'image' ? 'Image description' : 'Content'}</label>
                   {block.type === 'text' ? (
                     <textarea value={block.content} onChange={e => updateBlock(block.id, { content: e.target.value })} className="w-full rounded-lg border border-[rgb(var(--border))] bg-transparent p-2 text-sm" rows={3} />
                   ) : (
@@ -268,7 +350,7 @@ export default function TemplateBuilder() {
         </div>
       </div>
 
-      <div className="space-y-3 xl:col-span-2">
+      <div className="space-y-3 2xl:col-span-2 w-full">
         <div className="p-4 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card-bg))] flex items-center justify-between">
           <div>
             <h2 className="font-semibold text-sm">Live preview</h2>
@@ -279,16 +361,16 @@ export default function TemplateBuilder() {
             <span>{brandColor}</span>
           </div>
         </div>
-        <div className="rounded-2xl border border-[rgb(var(--border))] bg-white text-black overflow-hidden shadow-lg">
-          <div className="bg-gray-100 px-6 py-4 flex items-center gap-3">
+        <div className="rounded-2xl border border-[rgb(var(--border))] bg-white text-black overflow-hidden shadow-lg max-w-5xl mx-auto">
+          <div className="bg-gray-100 px-8 py-5 flex items-center gap-4">
             {logo && <img src={logo} alt="Brand logo" className="h-10 w-10 object-contain" />}
             <div>
               <p className="text-xs text-gray-500">Template</p>
               <p className="font-semibold text-gray-800 text-lg leading-tight">{name}</p>
             </div>
           </div>
-          <div className="p-6">
-            <div className="space-y-4 text-base" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+          <div className="p-8 text-[17px] leading-relaxed">
+            <div className="space-y-4" dangerouslySetInnerHTML={{ __html: previewHtml }} />
             {localAttachments.length > 0 && (
               <div className="mt-5 border-t pt-4 text-sm">
                 <p className="font-semibold mb-2">Attachments</p>

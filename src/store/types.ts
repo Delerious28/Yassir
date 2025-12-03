@@ -31,9 +31,12 @@ export type Settings = {
   appLogoUrl?: string
   brandLogoUrl?: string
   defaultEmailTemplate?: EmailTemplate
+  templates?: EmailTemplate[]
+  defaultTemplateId?: UUID
 }
 
 export type EmailTemplate = {
+  id: UUID
   name: string
   brandColor?: string
   blocks: EmailBlock[]
