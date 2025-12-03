@@ -51,22 +51,8 @@ html, body, #root {
 }
 
 /* ================================================
-   CYBER THEME — NEON MINT & ORCHID
-   (Professional + Glassmorphism)
-================================================ */
-.theme-cyber {
-  --bg: 10 12 24;          /* midnight */
-  --fg: 225 238 255;       /* cool white */
-  --card-bg: 18 21 38;     /* glass base */
-
-  --border: 90 120 255;    /* muted glow */
-
-  --accent: 102 255 204;   /* mint */
-  --accent2: 255 140 199;  /* orchid */
-
-  --glass: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(102, 255, 204, 0.22);
-  --glass-glow: rgba(102, 255, 204, 0.45);
+   AURORA THEME — Liquid glass inspired by macOS
+   (soft blue mist, frosted light layers)
 }
 
 /* ================================================
@@ -117,70 +103,71 @@ body {
 }
 
 /* ================================================
-   CARD GLASS EFFECT FOR CYBER THEME
+   CARD GLASS EFFECT FOR AURORA THEME
 ================================================ */
-html.theme-cyber .card,
-html.theme-cyber .border,
-html.theme-cyber .border-r,
-html.theme-cyber .border-b {
-  background: var(--glass) !important;
-  backdrop-filter: blur(12px);
+html.theme-aurora .card,
+html.theme-aurora .border,
+html.theme-aurora .border-r,
+html.theme-aurora .border-b {
+  background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08)) !important;
+  backdrop-filter: blur(18px) saturate(130%);
   border-color: var(--glass-border) !important;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.35), 0 0 10px var(--glass-glow);
+  box-shadow: 0 12px 40px rgba(3,11,28,0.45), inset 0 1px 0 rgba(255,255,255,0.18), 0 0 16px var(--glass-glow);
 }
 
 /* ================================================
    INPUTS / BUTTONS / UI ELEMENTS
 ================================================ */
 
-html.theme-cyber input,
-html.theme-cyber textarea,
-html.theme-cyber select {
-  background-color: rgba(255,255,255,0.03) !important;
+html.theme-aurora input,
+html.theme-aurora textarea,
+html.theme-aurora select {
+  background-color: rgba(255,255,255,0.14) !important;
   border-color: var(--glass-border) !important;
   color: rgb(var(--fg)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
 }
 
-html.theme-cyber input::placeholder {
-  color: rgba(0,246,255,0.5) !important;
+html.theme-aurora input::placeholder {
+  color: rgba(200,225,255,0.65) !important;
 }
 
-html.theme-cyber button {
+html.theme-aurora button {
   border-color: var(--glass-border) !important;
-  background: linear-gradient(135deg, rgba(102,255,204,0.18), rgba(255,140,199,0.16)) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(185,225,255,0.18)) !important;
   color: rgb(var(--fg)) !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25), 0 0 12px rgba(102,255,204,0.45);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.25), 0 0 20px rgba(128,190,255,0.35);
 }
 
-html.theme-cyber button:hover {
-  background: linear-gradient(135deg, rgba(255,140,199,0.22), rgba(102,255,204,0.25)) !important;
-  border-color: rgba(255,140,199,0.4) !important;
-  box-shadow: 0 0 24px rgba(255,140,199,0.55);
+html.theme-aurora button:hover {
+  background: linear-gradient(135deg, rgba(185,225,255,0.2), rgba(255,255,255,0.26)) !important;
+  border-color: rgba(255,255,255,0.4) !important;
+  box-shadow: 0 0 26px rgba(128,190,255,0.5);
 }
 
 /* ================================================
    TEXT COLORS
 ================================================ */
 
-html.theme-cyber h1,
-html.theme-cyber h2,
-html.theme-cyber h3,
-html.theme-cyber .font-semibold,
-html.theme-cyber .font-medium {
-  text-shadow: 0 0 10px rgba(0,246,255,0.8);
+html.theme-aurora h1,
+html.theme-aurora h2,
+html.theme-aurora h3,
+html.theme-aurora .font-semibold,
+html.theme-aurora .font-medium {
+  text-shadow: 0 6px 26px rgba(0,34,78,0.55);
 }
 
-html.theme-cyber a {
-  color: rgb(var(--accent2));
-  text-shadow: 0 0 8px rgba(255,46,129,0.8);
+html.theme-aurora a {
+  color: rgb(var(--accent));
+  text-shadow: 0 6px 18px rgba(0,34,78,0.5);
 }
 
-html.theme-cyber .text-muted {
+html.theme-aurora .text-muted {
   color: rgba(220,220,255,0.5) !important;
 }
 
 /* ============================================================
-   CYBER THEME — ANIMATED NEON EFFECTS
+   AURORA THEME — ANIMATED NEON EFFECTS
    (Slow breathing glow around all core UI elements)
 ============================================================ */
 
@@ -203,9 +190,9 @@ html.theme-cyber .text-muted {
    Animated cards
 ================================================ */
 
-html.theme-cyber .card,
-html.theme-cyber .border,
-html.theme-cyber .rounded-lg {
+html.theme-aurora .card,
+html.theme-aurora .border,
+html.theme-aurora .rounded-lg {
   animation: cyber-glow 6s ease-in-out infinite;
 }
 
@@ -213,7 +200,7 @@ html.theme-cyber .rounded-lg {
    Animated buttons
 ================================================ */
 
-html.theme-cyber button {
+html.theme-aurora button {
   animation: cyber-glow 5s ease-in-out infinite;
 }
 
@@ -221,9 +208,9 @@ html.theme-cyber button {
    Animated focus outline for inputs
 ================================================ */
 
-html.theme-cyber input:focus,
-html.theme-cyber textarea:focus,
-html.theme-cyber select:focus {
+html.theme-aurora input:focus,
+html.theme-aurora textarea:focus,
+html.theme-aurora select:focus {
   outline: none !important;
   animation: cyber-glow 2.2s ease-in-out infinite;
 }
@@ -232,7 +219,7 @@ html.theme-cyber select:focus {
    Accent animated underline for links
 ================================================ */
 
-html.theme-cyber a:hover {
+html.theme-aurora a:hover {
   text-shadow: 0 0 12px rgba(255, 46, 129, 0.8),
                0 0 20px rgba(0, 246, 255, 0.7);
 }
@@ -261,19 +248,19 @@ html.theme-dark .hover\:bg-gray-100:hover {
 }
 
 /* ================================================
-   CYBER THEME BODY & ROOT
+   AURORA THEME BODY & ROOT
 ================================================ */
 
-html.theme-cyber,
-html.theme-cyber body,
-html.theme-cyber #root {
+html.theme-aurora,
+html.theme-aurora body,
+html.theme-aurora #root {
   background-color: rgb(var(--bg)) !important;
   color: rgb(var(--fg)) !important;
 }
 
-html.theme-cyber aside,
-html.theme-cyber .border-r,
-html.theme-cyber .border-b {
+html.theme-aurora aside,
+html.theme-aurora .border-r,
+html.theme-aurora .border-b {
   background-color: rgb(var(--card-bg)) !important;
   color: rgb(var(--fg)) !important;
   border-color: rgba(0,246,255,0.4) !important;

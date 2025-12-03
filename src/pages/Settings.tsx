@@ -167,7 +167,7 @@ export default function Settings() {
       accentClass: 'from-cyan-400/15 via-cyan-500/10 to-transparent'
     },
     {
-      id: 'cyber',
+      id: 'aurora',
       label: 'Aurora',
       icon: '✨',
       description: 'Glassmorphic mint & orchid neon',

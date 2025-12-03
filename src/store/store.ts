@@ -67,13 +67,16 @@ function saveState(state: State) {
 
 export const useStore = create<State & Actions>((set, get) => {
   const loadedState = loadState()
+  if ((loadedState as any).uiTheme === 'cyber') {
+    (loadedState as any).uiTheme = 'aurora'
+  }
   const initialState = { ...initial, ...loadedState }
   
   // Apply theme immediately on load
   if (typeof document !== 'undefined') {
     const root = document.documentElement
-    root.classList.remove('theme-light', 'theme-dark', 'theme-cyber')
-    const cls = initialState.uiTheme === 'dark' ? 'theme-dark' : initialState.uiTheme === 'cyber' ? 'theme-cyber' : 'theme-light'
+    root.classList.remove('theme-light', 'theme-dark', 'theme-aurora')
+    const cls = initialState.uiTheme === 'dark' ? 'theme-dark' : initialState.uiTheme === 'aurora' ? 'theme-aurora' : 'theme-light'
     root.classList.add(cls)
   }
   
@@ -124,8 +127,8 @@ try {
     saveState(state)
     // Apply theme to document root
     const root = document.documentElement
-    root.classList.remove('theme-light', 'theme-dark', 'theme-cyber')
-    const cls = state.uiTheme === 'dark' ? 'theme-dark' : state.uiTheme === 'cyber' ? 'theme-cyber' : 'theme-light'
+    root.classList.remove('theme-light', 'theme-dark', 'theme-aurora')
+    const cls = state.uiTheme === 'dark' ? 'theme-dark' : state.uiTheme === 'aurora' ? 'theme-aurora' : 'theme-light'
     root.classList.add(cls)
   })
   // ;(window as any).__outreach_unsub = unsub

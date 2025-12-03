@@ -43,9 +43,10 @@ export default function SendPage() {
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                  <Button className="w-full" onClick={() => window.location.href = `/campaigns/${c.id}/send`}>Open send tab</Button>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Button className="w-full" variant="secondary" onClick={async ()=>{
+                  <Button className="w-full sm:w-40" onClick={() => window.location.href = `/campaigns/${c.id}/send`}>
+                    Open send tab
+                  </Button>
+                  <Button className="w-full sm:w-40" variant="secondary" onClick={async ()=>{
                       const targets = leads
                       for (const lead of targets) {
                         const subject = c.step1.subject
@@ -64,8 +65,10 @@ export default function SendPage() {
                           logSend({ to: lead.email, time: now, campaignId: c.id, step: 1 })
                         }
                       }
-                    }}>Force Mail 1</Button>
-                    <Button className="w-full" variant="secondary" onClick={async ()=>{
+                    }}>
+                    Force Mail 1
+                  </Button>
+                  <Button className="w-full sm:w-40" variant="secondary" onClick={async ()=>{
                       const targets = leads
                       for (const lead of targets) {
                         const subject = (c.step2?.subject ?? c.step1.subject)
@@ -84,8 +87,9 @@ export default function SendPage() {
                           logSend({ to: lead.email, time: now, campaignId: c.id, step: 2 })
                         }
                       }
-                    }}>Force Mail 2</Button>
-                  </div>
+                    }}>
+                    Force Mail 2
+                  </Button>
                 </div>
               </div>
             </Card>
