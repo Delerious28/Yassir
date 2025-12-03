@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { nanoid } from '../utils/nanoid'
-import type { Campaign, ConnectionStatus, Lead, LogEntry, Settings, UiTheme, UUID } from './types'
+import type { Campaign, ConnectionStatus, EmailTemplate, Lead, LogEntry, Settings, UiTheme, UUID } from './types'
 
 type State = {
   leads: Lead[]
@@ -24,6 +24,8 @@ type Actions = {
   setUiTheme: (t: UiTheme) => void
 }
 
+const initialDefaultTemplate = createDefaultTemplate()
+
 const initial: State = {
   leads: [],
   campaigns: [],
@@ -34,8 +36,46 @@ const initial: State = {
     windowEnd: '17:00',
     intervalMinMins: 3,
     intervalMaxMins: 6,
+    defaultEmailTemplate: initialDefaultTemplate,
+    templates: [initialDefaultTemplate],
+    defaultTemplateId: initialDefaultTemplate.id,
   },
   uiTheme: 'light',
+}
+
+export function createDefaultTemplate(): EmailTemplate {
+  return {
+    id: nanoid(),
+    name: 'Brand Default',
+    brandColor: '#2563EB',
+    blocks: [
+      {
+        id: nanoid(),
+        type: 'text',
+        content: 'Introduce your brand with a short welcome message.',
+        align: 'left',
+        padding: '16px 12px 8px',
+      },
+      {
+        id: nanoid(),
+        type: 'button',
+        content: 'Call to action',
+        align: 'center',
+        padding: '8px 12px 16px',
+        background: '#2563EB',
+        textColor: '#FFFFFF',
+        buttonUrl: 'https://example.com'
+      },
+      {
+        id: nanoid(),
+        type: 'text',
+        content: 'Add follow-up details and contact information here.',
+        align: 'left',
+        padding: '12px',
+      }
+    ],
+    attachments: [],
+  }
 }
 
 function loadState(): Partial<State> {
@@ -77,6 +117,25 @@ export const useStore = create<State & Actions>((set, get) => {
     loadedState.uiTheme = 'light'
   }
   const initialState = { ...initial, ...loadedState }
+
+  if (!initialState.settings.templates || initialState.settings.templates.length === 0) {
+    const fallback = initialState.settings.defaultEmailTemplate || createDefaultTemplate()
+    const ensuredId = fallback.id ? fallback : { ...fallback, id: nanoid() }
+    initialState.settings.templates = [ensuredId]
+    initialState.settings.defaultTemplateId = ensuredId.id
+    initialState.settings.defaultEmailTemplate = ensuredId
+  }
+
+  if (!initialState.settings.defaultTemplateId && initialState.settings.templates?.length) {
+    initialState.settings.defaultTemplateId = initialState.settings.templates[0].id
+  }
+
+  if (initialState.settings.defaultTemplateId) {
+    const matchingDefault = initialState.settings.templates?.find(t => t.id === initialState.settings.defaultTemplateId)
+    if (matchingDefault) {
+      initialState.settings.defaultEmailTemplate = matchingDefault
+    }
+  }
 
   // Apply theme immediately on load
   if (typeof document !== 'undefined') {
