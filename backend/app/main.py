@@ -8,6 +8,8 @@ import json
 import shutil
 from pathlib import Path
 from datetime import datetime
+import re
+import base64
 
 app = FastAPI(title="Outreach Backend", version="0.1.0")
 # Simple .env loader
@@ -30,6 +32,7 @@ if ENV_PATH.exists():
 ENV_CLIENT_ID = ENV_VARS.get("AZURE_CLIENT_ID", "4bb85405-0fc5-4dcc-b758-f2bb54057a57")
 ENV_TENANT_ID = ENV_VARS.get("AZURE_TENANT_ID", "consumers")
 ENV_MAIL_FROM = ENV_VARS.get("MAIL_FROM", "beaumeteens@gmail.com")
+ENV_CLIENT_SECRET = ENV_VARS.get("AZURE_CLIENT_SECRET", "")
 
 # Allow local dev frontend to call the backend
 app.add_middleware(
@@ -45,6 +48,7 @@ app.add_middleware(
 
 # Serve production build with caching (if dist folder exists)
 DIST_PATH = Path(__file__).parent.parent.parent / "dist"
+PUBLIC_IMAGES_PATH = Path(__file__).parent.parent.parent / "public" / "images"
 if DIST_PATH.exists():
     @app.middleware("http")
     async def add_cache_headers(request, call_next):
@@ -55,6 +59,13 @@ if DIST_PATH.exists():
         return response
     # Serve assets only to avoid overriding API routes in dev
     app.mount("/assets", StaticFiles(directory=str(DIST_PATH / "assets")), name="assets")
+
+# Always serve uploaded images from public/images
+try:
+    PUBLIC_IMAGES_PATH.mkdir(parents=True, exist_ok=True)
+    app.mount("/images", StaticFiles(directory=str(PUBLIC_IMAGES_PATH)), name="images")
+except Exception as e:
+    print(f"Warning: Failed to mount /images static: {e}")
 
 class SendMailBody(BaseModel):
     to: EmailStr
@@ -155,6 +166,7 @@ def get_access_token(client_id: str | None, tenant_id: str | None) -> str:
 class AuthInitRequest(BaseModel):
     azure_client_id: str | None = None
     azure_tenant_id: str | None = None
+    azure_client_secret: str | None = None
 
 class AuthInitResponse(BaseModel):
     user_code: str
@@ -229,25 +241,74 @@ async def upload_logo(logo: UploadFile = File(...)):
     # Return path relative to public directory
     return {"path": f"/images/{filename}"}
 
+@app.post("/upload/image")
+async def upload_image(file: UploadFile = File(...)):
+    """Upload a generic image for campaigns/templates and save to public/images."""
+    images_dir = Path(__file__).parent.parent.parent / "public" / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    ext = file.filename.split('.')[-1] if '.' in file.filename else 'png'
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"uploaded-{timestamp}.{ext}"
+    file_path = images_dir / filename
+
+    with open(file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    return {"path": f"/images/{filename}"}
+
 @app.post("/auth/init", response_model=AuthInitResponse)
 async def auth_init(payload: AuthInitRequest):
-    """Initiate device code flow and return code for user to enter."""
+    """Initiate device code flow (for personal accounts) or use client credentials flow (for business accounts)."""
     tenant_id = payload.azure_tenant_id or ENV_TENANT_ID
     client_id = payload.azure_client_id or ENV_CLIENT_ID
+    client_secret = payload.azure_client_secret or ENV_CLIENT_SECRET
     authority = f"https://login.microsoftonline.com/{tenant_id}"
-    # Use full Graph scope URLs
-    scopes = ["https://graph.microsoft.com/User.Read", "https://graph.microsoft.com/Mail.Send"]
     
+    # For business accounts with client secret: use client credentials flow (no user interaction)
+    if client_secret:
+        app_msal = msal.ConfidentialClientApplication(
+            client_id=client_id,
+            client_credential=client_secret,
+            authority=authority,
+        )
+        # Client credentials flow requires /.default suffix
+        scopes = ["https://graph.microsoft.com/.default"]
+        
+        # Acquire token directly using client credentials
+        result = app_msal.acquire_token_for_client(scopes=scopes)
+        if "access_token" not in result:
+            error_msg = result.get("error_description", "Authentication failed")
+            print(f"[auth_init] Client credentials auth failed: {error_msg}")
+            raise HTTPException(status_code=401, detail=f"Azure auth failed: {error_msg}")
+        
+        # Store token and mark as authenticated
+        cache_key = f"{client_id}:{tenant_id}"
+        _token_cache[cache_key] = result
+        save_token_cache(_token_cache)
+        
+        # Return a success response (no device code needed)
+        return AuthInitResponse(
+            user_code="authenticated",
+            verification_uri="",
+            message="Successfully authenticated with client credentials",
+            expires_in=3600
+        )
+    
+    # For personal accounts: use device flow (requires user interaction)
     app_msal = msal.PublicClientApplication(
         client_id=client_id,
         authority=authority,
     )
     
+    # Device flow uses individual scopes
+    scopes = ["https://graph.microsoft.com/User.Read", "https://graph.microsoft.com/Mail.Send"]
+    
     flow = app_msal.initiate_device_flow(scopes=scopes)
     if "user_code" not in flow:
         raise HTTPException(status_code=500, detail="Failed to create device flow")
     
-    # Store flow for completion (in production, use Redis or database)
+    # Store flow for completion
     cache_key = f"{client_id}:{tenant_id}"
     _token_cache[f"{cache_key}:flow"] = (app_msal, flow)
     
@@ -257,6 +318,8 @@ async def auth_init(payload: AuthInitRequest):
         message=flow["message"],
         expires_in=flow.get("expires_in", 900)
     )
+
+
 
 @app.post("/auth/complete")
 async def auth_complete(payload: AuthInitRequest):
@@ -360,12 +423,78 @@ async def send_mail(payload: SendMailBody):
                 print(f"[send_mail] Token validation failed: {me_response.status_code} - {me_response.text}")
         
         # Prepare email payload for Microsoft Graph
+        # Detect if body is HTML (contains HTML tags) or plain text
+        is_html = bool(payload.body and ("<div" in payload.body or "<p" in payload.body or "<html" in payload.body))
+
+        message_body_content = payload.body
+        attachments: list[dict] = []
+
+        if is_html:
+            # Find all local image sources  
+            img_srcs = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', message_body_content or "")
+            
+            async with httpx.AsyncClient() as client:
+                img_counter = 0
+                for src in img_srcs:
+                    try:
+                        if src.startswith('data:'):
+                            continue
+                        
+                        src_url = src
+                        if src.startswith('/images/'):
+                            src_url = f"http://localhost:8000{src}"
+                        elif not src.startswith('http://localhost:8000'):
+                            continue
+                        
+                        print(f"[send_mail] Fetching image: {src_url}")
+                        r = await client.get(src_url, timeout=10.0)
+                        if r.status_code == 200:
+                            content_bytes = r.content
+                            ct = r.headers.get('Content-Type', 'image/png')
+                            
+                            # Get filename from URL
+                            filename = src_url.split('/')[-1]
+                            
+                            # Generate unique Content-ID (must be unique, can't have special chars except @ and .)
+                            # Format: uniqueid@domain
+                            content_id = f"{filename.split('.')[0]}{img_counter}@local"
+                            img_counter += 1
+                            
+                            # Convert to base64
+                            b64_data = base64.b64encode(content_bytes).decode('ascii')
+                            
+                            # Add as inline attachment
+                            # Note: Graph API docs show contentId is read-only and assigned by Exchange
+                            # But for sendMail endpoint, we can set it for inline images
+                            attachments.append({
+                                "@odata.type": "#microsoft.graph.fileAttachment",
+                                "name": filename,
+                                "contentType": ct,
+                                "contentBytes": b64_data,
+                                "contentId": content_id,
+                                "isInline": True
+                            })
+                            
+                            # Replace image src with cid: reference (no angle brackets)
+                            message_body_content = message_body_content.replace(src, f"cid:{content_id}")
+                            print(f"[send_mail] Added inline attachment: {filename} with CID: cid:{content_id}")
+                    except Exception as e:
+                        print(f"[send_mail] Image fetch error for {src}: {e}")
+
+        # Ensure we're sending as HTML
+        content_type = "HTML" if is_html else "Text"
+        print(f"[send_mail] Sending as: {content_type}, Body length: {len(message_body_content)} chars, Attachments: {len(attachments)}")
+        
+        # Debug: Print the HTML body to see CID references
+        if attachments:
+            print(f"[send_mail] HTML body preview (first 500 chars):\n{message_body_content[:500]}")
+        
         graph_payload = {
             "message": {
                 "subject": payload.subject,
                 "body": {
-                    "contentType": "Text",
-                    "content": payload.body
+                    "contentType": content_type,
+                    "content": message_body_content
                 },
                 "toRecipients": [
                     {
@@ -377,6 +506,10 @@ async def send_mail(payload: SendMailBody):
             },
             "saveToSentItems": "true"
         }
+        
+        # Add inline attachments if any
+        if attachments:
+            graph_payload["message"]["attachments"] = attachments
         
         # Send via Microsoft Graph API
         async with httpx.AsyncClient() as client:

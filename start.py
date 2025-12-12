@@ -207,6 +207,7 @@ def run_frontend():
     node_path = str(NODE_DIR)
     env = os.environ.copy()
     env["PATH"] = f"{node_path};{env['PATH']}"
+    env["CONSOLE_NINJA_ENABLED"] = "false"  # Disable Console Ninja extension
     npm_cmd = os.path.join(node_path, "npm.cmd")
     
     print("[start] Starting frontend...")

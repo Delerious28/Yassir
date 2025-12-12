@@ -5,8 +5,9 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { useStore } from '../store/store'
 import { generateScheduleTimes } from '../lib/time'
-import { api } from '../lib/api'
+import { api, renderTemplateWithContent } from '../lib/api'
 import { Table, THead, TH, TBody, TR, TD } from '../components/ui/Table'
+import type { Campaign } from '../store/types'
 
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>()
@@ -17,6 +18,28 @@ export default function CampaignDetail() {
   const { pathname } = useLocation()
   const base = `/campaigns/${id}`
   const currentTab = pathname.endsWith('/send') ? 'send' : 'details'
+
+  function getEmailBody(camp: Campaign, step: 1 | 2): string {
+    // If campaign uses a template, render it with content
+    if (camp.templateId) {
+      console.log('[CampaignDetail] Campaign uses template:', camp.templateId)
+      const template = store.settings.templates?.find(t => t.id === camp.templateId)
+      console.log('[CampaignDetail] Found template:', template?.name)
+      if (template) {
+        const contentBlocks = step === 1 ? camp.step1Content : camp.step2Content
+        console.log('[CampaignDetail] Content blocks:', contentBlocks)
+        if (contentBlocks) {
+          const rendered = renderTemplateWithContent(template, contentBlocks, store.settings.brandLogoUrl)
+          console.log('[CampaignDetail] Rendered HTML (first 200 chars):', rendered.substring(0, 200))
+          return rendered
+        }
+      }
+    }
+    
+    // Fallback to plain text body
+    console.log('[CampaignDetail] Using plain text fallback')
+    return step === 1 ? camp.step1.body : (camp.step2?.body || camp.step1.body)
+  }
 
   if (id !== 'new' && !campaign) {
     return <Card>Campaign not found.</Card>
@@ -30,6 +53,13 @@ export default function CampaignDetail() {
   function clearLeads() {
     if (!id || id === 'new') return
     store.clearCampaignLeads(id)
+  }
+
+  function deleteCampaign() {
+    if (!id || id === 'new') return
+    if (!confirm('Delete this campaign? This cannot be undone.')) return
+    store.removeCampaign(id)
+    window.location.href = '/campaigns'
   }
 
   function simulateSendMail1() {
@@ -47,7 +77,7 @@ export default function CampaignDetail() {
     const targets = selected.length ? leads.filter(l => selected.includes(l.id)) : leads
     for (const lead of targets) {
       const subject = step === 1 ? campaign.step1.subject : (campaign.step2?.subject ?? campaign.step1.subject)
-      const body = step === 1 ? campaign.step1.body : (campaign.step2?.body ?? campaign.step1.body)
+      const body = getEmailBody(campaign, step)
       try {
         await api.sendMail({ to: lead.email, subject, body, config: { azure_client_id: store.settings.azure_client_id, azure_tenant_id: store.settings.azure_tenant_id, mail_from: store.settings.mail_from } })
         const now = new Date().toISOString()
@@ -72,6 +102,7 @@ export default function CampaignDetail() {
             <div className="flex gap-2 flex-wrap">
               <Button variant="secondary" onClick={attachAllLeads}>Attach all leads</Button>
               <Button variant="ghost" onClick={clearLeads}>Clear leads</Button>
+              <Button variant="ghost" onClick={deleteCampaign}>Delete campaign</Button>
             </div>
           </div>
           <div className="mt-4 grid sm:grid-cols-3 gap-3 text-sm text-[rgb(var(--muted))]">

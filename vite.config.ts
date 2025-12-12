@@ -4,6 +4,19 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+    },
+    // Disable Console Ninja extension to prevent connection timeout
+    middlewareMode: false,
+  },
+  // Disable Console Ninja extension
+  define: {
+    '__CONSOLE_NINJA_ENABLED__': false,
+  },
   build: {
     // Enable minification
     minify: 'terser',

@@ -108,7 +108,8 @@ export default function Settings() {
       })
       const data = await resp.json()
       setUploadedLogoPath(data.path)
-      setLocalSettings({ ...localSettings, appLogoUrl: data.path })
+      // Use same uploaded path for UI logo and outbound email brand logo
+      setLocalSettings({ ...localSettings, appLogoUrl: data.path, brandLogoUrl: data.path })
     } catch {
       alert("Failed to upload logo")
     }
@@ -414,12 +415,15 @@ export default function Settings() {
               </div>
             </div>
 
-            {(uploadedLogoPath || localSettings.appLogoUrl) && (
+            {(uploadedLogoPath || localSettings.appLogoUrl || localSettings.brandLogoUrl) && (
               <div className="p-4 border border-[rgb(var(--border))] rounded-xl flex items-center gap-3 bg-[rgb(var(--card-bg))]">
-                <img src={uploadedLogoPath || localSettings.appLogoUrl} alt="Logo preview" className="w-12 h-12 object-contain rounded-lg" />
+                <img src={uploadedLogoPath || localSettings.appLogoUrl || localSettings.brandLogoUrl} alt="Logo preview" className="w-12 h-12 object-contain rounded-lg" />
                 <div>
                   <p className="text-sm font-semibold text-[rgb(var(--fg))]">Current logo</p>
-                  <p className="text-xs text-[rgb(var(--muted))]">Displayed across your navigation and outbound emails.</p>
+                  <p className="text-xs text-[rgb(var(--muted))]">Displayed across your navigation and at the top of outbound emails.</p>
+                </div>
+                <div className="ml-auto">
+                  <Button variant="ghost" onClick={() => { setUploadedLogoPath(null); setLocalSettings({ ...localSettings, appLogoUrl: undefined, brandLogoUrl: undefined }) }}>Remove</Button>
                 </div>
               </div>
             )}

@@ -2,13 +2,36 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { useStore } from '../store/store'
 import { Link } from 'react-router-dom'
-import { api } from '../lib/api'
+import { api, renderTemplateWithContent } from '../lib/api'
+import type { Campaign } from '../store/types'
 
 export default function SendPage() {
   const campaigns = useStore(s => s.campaigns)
   const leads = useStore(s => s.leads)
   const settings = useStore(s => s.settings)
   const logSend = useStore(s => s.logSend)
+
+  function getEmailBody(campaign: Campaign, step: 1 | 2): string {
+    // If campaign uses a template, render it with content
+    if (campaign.templateId) {
+      console.log('[Send] Campaign uses template:', campaign.templateId)
+      const template = settings.templates?.find(t => t.id === campaign.templateId)
+      console.log('[Send] Found template:', template?.name)
+      if (template) {
+        const contentBlocks = step === 1 ? campaign.step1Content : campaign.step2Content
+        console.log('[Send] Content blocks:', contentBlocks)
+        if (contentBlocks) {
+          const rendered = renderTemplateWithContent(template, contentBlocks, settings.brandLogoUrl)
+          console.log('[Send] Rendered HTML (first 200 chars):', rendered.substring(0, 200))
+          return rendered
+        }
+      }
+    }
+    
+    // Fallback to plain text body
+    console.log('[Send] Using plain text fallback')
+    return step === 1 ? campaign.step1.body : (campaign.step2?.body || campaign.step1.body)
+  }
 
   return (
     <div className="space-y-6">
@@ -48,7 +71,7 @@ export default function SendPage() {
                       const targets = leads
                       for (const lead of targets) {
                         const subject = c.step1.subject
-                        const body = c.step1.body
+                        const body = getEmailBody(c, 1)
                         try {
                           await api.sendMail({ to: lead.email, subject, body, config: { azure_client_id: settings.azure_client_id, azure_tenant_id: settings.azure_tenant_id, mail_from: settings.mail_from } })
                           const now = new Date().toISOString()
@@ -65,7 +88,7 @@ export default function SendPage() {
                       const targets = leads
                       for (const lead of targets) {
                         const subject = (c.step2?.subject ?? c.step1.subject)
-                        const body = (c.step2?.body ?? c.step1.body)
+                        const body = getEmailBody(c, 2)
                         try {
                           await api.sendMail({ to: lead.email, subject, body, config: { azure_client_id: settings.azure_client_id, azure_tenant_id: settings.azure_tenant_id, mail_from: settings.mail_from } })
                           const now = new Date().toISOString()

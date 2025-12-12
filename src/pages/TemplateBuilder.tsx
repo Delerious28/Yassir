@@ -4,6 +4,7 @@ import Button from '../components/ui/Button'
 import { useStore } from '../store/store'
 import type { EmailBlock, TemplateAttachment } from '../store/types'
 import { nanoid } from '../utils/nanoid'
+import { apiBaseUrl } from '../lib/constants'
 
 const blockPalette: { label: string; type: EmailBlock['type']; description: string; icon: typeof Type }[] = [
   { label: 'Text', type: 'text', description: 'Paragraphs, disclaimers, and signatures', icon: Type },
@@ -71,25 +72,36 @@ export default function TemplateBuilder() {
     setLocalBlocks(b => [...b, starter])
   }
 
-  function readImageFile(file: File, onDone: (dataUrl: string) => void) {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result
-      if (typeof result === 'string') {
-        onDone(result)
+  async function handleBlockImageUpload(blockId: string, file?: File | null) {
+    if (!file) return
+    const form = new FormData()
+    form.append('file', file)
+    try {
+      const resp = await fetch(`${apiBaseUrl}/upload/image`, { method: 'POST', body: form })
+      const json = await resp.json()
+      if (json?.path) {
+        const url = json.path.startsWith('/') ? `${apiBaseUrl}${json.path}` : json.path
+        updateBlock(blockId, { content: url })
       }
+    } catch (e) {
+      console.error('[TemplateBuilder] Image upload failed', e)
     }
-    reader.readAsDataURL(file)
   }
 
-  function handleBlockImageUpload(blockId: string, file?: File | null) {
+  async function handleLogoUpload(file?: File | null) {
     if (!file) return
-    readImageFile(file, dataUrl => updateBlock(blockId, { content: dataUrl }))
-  }
-
-  function handleLogoUpload(file?: File | null) {
-    if (!file) return
-    readImageFile(file, dataUrl => setLogo(dataUrl))
+    const form = new FormData()
+    form.append('logo', file)
+    try {
+      const resp = await fetch(`${apiBaseUrl}/upload/logo`, { method: 'POST', body: form })
+      const json = await resp.json()
+      if (json?.path) {
+        const url = json.path.startsWith('/') ? `${apiBaseUrl}${json.path}` : json.path
+        setLogo(url)
+      }
+    } catch (e) {
+      console.error('[TemplateBuilder] Logo upload failed', e)
+    }
   }
 
   function move(id: string, dir: -1 | 1) {
@@ -139,6 +151,14 @@ export default function TemplateBuilder() {
     const defaultId = markAsDefault ? ensuredId : (settings.defaultTemplateId || ensuredId)
     const defaultTemplate = updatedTemplates.find(t => t.id === defaultId) || updatedTemplate
 
+    console.log('[TemplateBuilder] Saving template:', {
+      id: ensuredId,
+      name: updatedTemplate.name,
+      markAsDefault,
+      defaultId,
+      blocksCount: localBlocks.length
+    })
+
     setSelectedTemplateId(ensuredId)
     setSettings({
       templates: updatedTemplates,
@@ -146,6 +166,8 @@ export default function TemplateBuilder() {
       defaultEmailTemplate: defaultTemplate,
       brandLogoUrl: logo || undefined,
     })
+    
+    console.log('[TemplateBuilder] Template saved successfully')
   }
 
   function addTemplate() {
@@ -210,6 +232,21 @@ export default function TemplateBuilder() {
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
             <label className="text-sm font-medium text-[rgb(var(--muted))]">Template name</label>
             <input value={name} onChange={e => setName(e.target.value)} className="flex-1 rounded-lg border border-[rgb(var(--border))] bg-transparent px-3 py-2 text-sm" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => saveTemplate(true)}>Save & set default</Button>
+            <Button onClick={() => saveTemplate(false)}>Save template</Button>
+            <Button variant="ghost" onClick={() => {
+              if (!selectedTemplateId) return
+              if (templates.length <= 1) {
+                alert('Cannot delete the last template.')
+                return
+              }
+              const nextTemplates = templates.filter(t => t.id !== selectedTemplateId)
+              const nextDefaultId = settings.defaultTemplateId === selectedTemplateId ? nextTemplates[0]?.id : settings.defaultTemplateId
+              setSettings({ templates: nextTemplates, defaultTemplateId: nextDefaultId, defaultEmailTemplate: nextTemplates.find(t=>t.id===nextDefaultId) })
+              setSelectedTemplateId(nextDefaultId || nextTemplates[0]?.id || '')
+            }}>Delete template</Button>
           </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
             <label className="text-sm font-medium text-[rgb(var(--muted))]">Brand color</label>
@@ -406,7 +443,8 @@ function renderPreview(blocks: EmailBlock[], brandColor: string, attachments?: T
       const bg = block.background || brandColor
       const fg = block.textColor || '#ffffff'
       const url = block.buttonUrl || '#'
-      return `<div style="padding:${padding};text-align:${align};${background ? `background:${background};` : ''}"><a href="${url}" style="display:inline-block;background:${bg};color:${fg};padding:12px 18px;border-radius:12px;font-weight:600;text-decoration:none">${block.content}</a></div>`
+      // Make the entire button area clickable by styling the anchor, not just the text
+      return `<div style="text-align:${align};${background ? `background:${background};` : ''}"><a href="${url}" style="display:block;padding:${padding};background:${bg};color:${fg};border-radius:12px;font-weight:600;text-decoration:none;text-align:${align}">${block.content}</a></div>`
     }
 
     const fontFamily = block.fontFamily || 'Inter, system-ui, sans-serif'

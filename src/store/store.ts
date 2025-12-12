@@ -17,6 +17,7 @@ type Actions = {
   removeLead: (id: UUID) => void
   addCampaign: (c: Omit<Campaign, 'id' | 'leadIds'> & { leadIds?: UUID[] }) => UUID
   updateCampaign: (id: UUID, patch: Partial<Omit<Campaign, 'id'>>) => void
+  removeCampaign: (id: UUID) => void
   attachLeadsToCampaign: (campaignId: UUID, leadIds: UUID[]) => void
   clearCampaignLeads: (campaignId: UUID) => void
   logSend: (entry: Omit<LogEntry, 'id'>) => void
@@ -161,8 +162,11 @@ export const useStore = create<State & Actions>((set, get) => {
       const campaign: Campaign = {
         id,
         name: c.name,
+        templateId: c.templateId,
         step1: c.step1,
+        step1Content: c.step1Content,
         step2: c.step2,
+        step2Content: c.step2Content,
         step2DelayDays: c.step2DelayDays,
         leadIds: c.leadIds ?? [],
       }
@@ -171,6 +175,9 @@ export const useStore = create<State & Actions>((set, get) => {
     },
     updateCampaign: (id, patch) => set((s) => ({
       campaigns: s.campaigns.map(c => c.id === id ? { ...c, ...patch } : c)
+    })),
+    removeCampaign: (id) => set((s) => ({
+      campaigns: s.campaigns.filter(c => c.id !== id)
     })),
     attachLeadsToCampaign: (campaignId, leadIds) => set((s) => ({
       campaigns: s.campaigns.map(c => c.id === campaignId ? { ...c, leadIds: Array.from(new Set([...(c.leadIds||[]), ...leadIds])) } : c)
