@@ -9,8 +9,8 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 export default function Button({ variant = 'primary', className, children, ...props }: Props) {
   const base = 'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition disabled:opacity-60 disabled:cursor-not-allowed'
   const variants = {
-    primary: 'bg-[rgb(var(--accent))] text-white hover:bg-[rgb(var(--accent2))] focus:ring-[rgba(var(--accent),0.4)] focus:ring-offset-[rgb(var(--card-bg))]',
-    secondary: 'border border-[rgb(var(--border))] bg-[rgb(var(--card-bg))] text-[rgb(var(--fg))] hover:bg-[rgba(var(--fg),0.05)] focus:ring-[rgba(var(--accent),0.35)] focus:ring-offset-[rgb(var(--card-bg))]',
+    primary: 'bg-gradient-to-r from-[rgb(var(--accent))] to-[rgb(var(--accent2))] text-white shadow-lg shadow-[rgba(var(--accent),0.3)] hover:brightness-105 focus:ring-[rgba(var(--accent),0.4)] focus:ring-offset-[rgb(var(--card-bg))]',
+    secondary: 'border border-[rgba(var(--border),0.9)] bg-[rgba(var(--card-bg),0.95)] text-[rgb(var(--fg))] hover:bg-[rgba(var(--fg),0.05)] focus:ring-[rgba(var(--accent),0.35)] focus:ring-offset-[rgb(var(--card-bg))]',
     ghost: 'text-[rgb(var(--fg))] hover:bg-[rgba(var(--fg),0.08)] focus:ring-[rgba(var(--accent),0.25)] focus:ring-offset-[rgb(var(--card-bg))]'
   }
   return (

@@ -379,12 +379,14 @@ async def send_mail(payload: SendMailBody):
     client_id = payload.azure_client_id or ENV_CLIENT_ID
     tenant_id = payload.azure_tenant_id or ENV_TENANT_ID
     mail_from = str(payload.mail_from or ENV_MAIL_FROM)
-    
+    graph_endpoint = "https://graph.microsoft.com/v1.0/me/sendMail"
+    sender_account = None
+
     try:
         # Get access token
         access_token = get_access_token(client_id, tenant_id)
         print(f"[send_mail] Using token (first 20 chars): {access_token[:20]}...")
-        
+
         # First verify token works and check mailbox
         async with httpx.AsyncClient() as client:
             me_response = await client.get(
@@ -392,18 +394,19 @@ async def send_mail(payload: SendMailBody):
                 headers={"Authorization": f"Bearer {access_token}"},
                 timeout=10.0
             )
+
             if me_response.status_code == 200:
                 me_data = me_response.json()
-                user_principal = me_data.get('userPrincipalName', 'unknown')
-                print(f"[send_mail] Token valid. User: {user_principal}")
-                
+                sender_account = me_data.get('userPrincipalName', 'unknown')
+                print(f"[send_mail] Token valid. User: {sender_account}")
+
                 # Check if this is a guest account (contains #EXT#)
-                if "#EXT#" in user_principal:
+                if "#EXT#" in sender_account:
                     raise HTTPException(
                         status_code=403,
-                        detail="Cannot send mail: You are signed in as a guest account. Guest accounts do not have mailboxes. Please sign in with a user account from your organization (e.g., yourname@yourdomain.onmicrosoft.com) or create one in Azure AD."
+                        detail="Cannot send mail: You are signed in as a guest account. Guest accounts do not have mailboxes. Please sign in with a user account from your organization (e.g., yourname@yourdomain.onmicrosoft.com) or create one in Azure AD.",
                     )
-                
+
                 # Check if user has a mailbox by trying to access mailbox settings
                 # Skip for personal accounts (consumers tenant) as they always have mailboxes
                 if tenant_id != "consumers":
@@ -416,12 +419,45 @@ async def send_mail(payload: SendMailBody):
                         print(f"[send_mail] Mailbox check failed: {mailbox_response.status_code}")
                         raise HTTPException(
                             status_code=403,
-                            detail="Cannot send mail: The account does not have an Exchange Online mailbox. Please assign a Microsoft 365 license (E1/E3/E5) to this user in the Azure Portal under 'Licenses'."
+                            detail="Cannot send mail: The account does not have an Exchange Online mailbox. Please assign a Microsoft 365 license (E1/E3/E5) to this user in the Azure Portal under 'Licenses'.",
                         )
-                    print(f"[send_mail] Mailbox exists for user {user_principal}")
+                    print(f"[send_mail] Mailbox exists for user {sender_account}")
             else:
                 print(f"[send_mail] Token validation failed: {me_response.status_code} - {me_response.text}")
-        
+
+                if me_response.status_code in (401, 403) and mail_from:
+                    user_endpoint = f"https://graph.microsoft.com/v1.0/users/{mail_from}"
+                    user_response = await client.get(
+                        user_endpoint,
+                        headers={"Authorization": f"Bearer {access_token}"},
+                        timeout=10.0
+                    )
+                    if user_response.status_code == 200:
+                        sender_account = mail_from
+                        graph_endpoint = f"https://graph.microsoft.com/v1.0/users/{mail_from}/sendMail"
+                        print(f"[send_mail] Using application token for mailbox {mail_from}")
+
+                        mailbox_response = await client.get(
+                            f"https://graph.microsoft.com/v1.0/users/{mail_from}/mailboxSettings",
+                            headers={"Authorization": f"Bearer {access_token}"},
+                            timeout=10.0
+                        )
+                        if mailbox_response.status_code == 404:
+                            raise HTTPException(
+                                status_code=403,
+                                detail="Cannot send mail: The configured sender mailbox does not have an Exchange Online license. Please assign a Microsoft 365 license to this account.",
+                            )
+                    else:
+                        raise HTTPException(
+                            status_code=403,
+                            detail="Cannot send mail: The configured sender mailbox could not be found. Confirm the address belongs to your Azure AD tenant and has an active Exchange Online license.",
+                        )
+                else:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Authentication token is invalid for mail operations. Please reconnect your Azure account.",
+                    )
+
         # Prepare email payload for Microsoft Graph
         # Detect if body is HTML (contains HTML tags) or plain text
         is_html = bool(payload.body and ("<div" in payload.body or "<p" in payload.body or "<html" in payload.body))
@@ -430,39 +466,39 @@ async def send_mail(payload: SendMailBody):
         attachments: list[dict] = []
 
         if is_html:
-            # Find all local image sources  
-            img_srcs = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', message_body_content or "")
-            
+            # Find all local image sources
+            img_srcs = re.findall(r'<img[^>]+src=["']([^"']+)["']', message_body_content or "")
+
             async with httpx.AsyncClient() as client:
                 img_counter = 0
                 for src in img_srcs:
                     try:
                         if src.startswith('data:'):
                             continue
-                        
+
                         src_url = src
                         if src.startswith('/images/'):
                             src_url = f"http://localhost:8000{src}"
                         elif not src.startswith('http://localhost:8000'):
                             continue
-                        
+
                         print(f"[send_mail] Fetching image: {src_url}")
                         r = await client.get(src_url, timeout=10.0)
                         if r.status_code == 200:
                             content_bytes = r.content
                             ct = r.headers.get('Content-Type', 'image/png')
-                            
+
                             # Get filename from URL
                             filename = src_url.split('/')[-1]
-                            
+
                             # Generate unique Content-ID (must be unique, can't have special chars except @ and .)
                             # Format: uniqueid@domain
                             content_id = f"{filename.split('.')[0]}{img_counter}@local"
                             img_counter += 1
-                            
+
                             # Convert to base64
                             b64_data = base64.b64encode(content_bytes).decode('ascii')
-                            
+
                             # Add as inline attachment
                             # Note: Graph API docs show contentId is read-only and assigned by Exchange
                             # But for sendMail endpoint, we can set it for inline images
@@ -474,7 +510,7 @@ async def send_mail(payload: SendMailBody):
                                 "contentId": content_id,
                                 "isInline": True
                             })
-                            
+
                             # Replace image src with cid: reference (no angle brackets)
                             message_body_content = message_body_content.replace(src, f"cid:{content_id}")
                             print(f"[send_mail] Added inline attachment: {filename} with CID: cid:{content_id}")
@@ -484,11 +520,12 @@ async def send_mail(payload: SendMailBody):
         # Ensure we're sending as HTML
         content_type = "HTML" if is_html else "Text"
         print(f"[send_mail] Sending as: {content_type}, Body length: {len(message_body_content)} chars, Attachments: {len(attachments)}")
-        
+
         # Debug: Print the HTML body to see CID references
         if attachments:
-            print(f"[send_mail] HTML body preview (first 500 chars):\n{message_body_content[:500]}")
-        
+            print(f"[send_mail] HTML body preview (first 500 chars):
+{message_body_content[:500]}")
+
         graph_payload = {
             "message": {
                 "subject": payload.subject,
@@ -506,15 +543,18 @@ async def send_mail(payload: SendMailBody):
             },
             "saveToSentItems": "true"
         }
-        
+
+        if mail_from:
+            graph_payload["message"]["from"] = {"emailAddress": {"address": mail_from}}
+
         # Add inline attachments if any
         if attachments:
             graph_payload["message"]["attachments"] = attachments
-        
+
         # Send via Microsoft Graph API
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                "https://graph.microsoft.com/v1.0/me/sendMail",
+                graph_endpoint,
                 headers={
                     "Authorization": f"Bearer {access_token}",
                     "Content-Type": "application/json"
@@ -522,7 +562,7 @@ async def send_mail(payload: SendMailBody):
                 json=graph_payload,
                 timeout=30.0
             )
-            
+
             if response.status_code == 202:
                 return {
                     "status": "sent",
@@ -535,14 +575,14 @@ async def send_mail(payload: SendMailBody):
                 print(f"[send_mail] Full response status: {response.status_code}")
                 print(f"[send_mail] Response headers: {dict(response.headers)}")
                 print(f"[send_mail] Response body: {error_detail}")
-                
+
                 # Special handling for 401 with empty body (typically mailbox not found)
                 if response.status_code == 401 and not error_detail:
                     raise HTTPException(
                         status_code=403,
                         detail="Cannot send mail: The authenticated account does not have an Exchange Online mailbox. Please ensure you're signed in with an account that has email enabled in your Microsoft 365 tenant."
                     )
-                
+
                 try:
                     error_json = response.json()
                     error_msg = error_json.get('error', {}).get('message', error_detail)
@@ -554,12 +594,11 @@ async def send_mail(payload: SendMailBody):
                     status_code=response.status_code,
                     detail=f"Graph API error: {error_msg}"
                 )
-                
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
-
 
 class AuthTestBody(BaseModel):
     azure_client_id: str | None = None
