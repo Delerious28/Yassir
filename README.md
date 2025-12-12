@@ -1,4 +1,4 @@
-# Outreach Email App
+# Outreach Email App (Yassir)
 
 A modern email outreach platform with campaign management, lead tracking, and Microsoft 365 integration.
 
